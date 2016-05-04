@@ -1,0 +1,696 @@
+SEQUENCES
+A "48070 HHMI 10ms.seq11"
+SEQUENCES_END
+
+IMAGES
+1 "pat-0.82NA+4.8deg-00ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA+4.8deg-01ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA+4.8deg-02ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA+5.2deg-00ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA+5.2deg-01ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA+5.2deg-02ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA+5.7deg-00ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA+5.7deg-01ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA+5.7deg-02ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA+6.0deg-00ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA+6.0deg-01ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA+6.0deg-02ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA+6.3deg-00ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA+6.3deg-01ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA+6.3deg-02ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA+6.7deg-00ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA+6.7deg-01ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA+6.7deg-02ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA+7.1deg-00ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA+7.1deg-01ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA+7.1deg-02ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA+7.6deg-00ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA+7.6deg-01ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA+7.6deg-02ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA+8.1deg-00ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA+8.1deg-01ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA+8.1deg-02ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA+8.7deg-00ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA+8.7deg-01ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA+8.7deg-02ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-111.0deg-00ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-111.0deg-01ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-111.0deg-02ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-111.3deg-00ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-111.3deg-01ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-111.3deg-02ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-111.8deg-00ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-111.8deg-01ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-111.8deg-02ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-112.4deg-00ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-112.4deg-01ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-112.4deg-02ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-112.6deg-00ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-112.6deg-01ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-112.6deg-02ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-113.2deg-00ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-113.2deg-01ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-113.2deg-02ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-113.6deg-00ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-113.6deg-01ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-113.6deg-02ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-114.0deg-00ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-114.0deg-01ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-114.0deg-02ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-114.4deg-00ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-114.4deg-01ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-114.4deg-02ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-51.3deg-00ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-51.3deg-01ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-51.3deg-02ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-51.8deg-00ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-51.8deg-01ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-51.8deg-02ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-52.1deg-00ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-52.1deg-01ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-52.1deg-02ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-52.4deg-00ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-52.4deg-01ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-52.4deg-02ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-53.1deg-00ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-53.1deg-01ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-53.1deg-02ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-53.7deg-00ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-53.7deg-01ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-53.7deg-02ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-54.0deg-00ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-54.0deg-01ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-54.0deg-02ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-54.5deg-00ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-54.5deg-01ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-54.5deg-02ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-55.0deg-00ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-55.0deg-01ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-55.0deg-02ph-7.0970pix-0.50DC.bmp"
+1 "pat-0.82NA-7.0970pix-0.50DC-10len_allangles.bmp"
+1 "pat-0.82NA-7.0970pix-0.50DC-11len_allangles.bmp"
+1 "pat-0.82NA-7.0970pix-0.50DC-12len_allangles.bmp"
+1 "pat-0.82NA-7.0970pix-0.50DC-13len_allangles.bmp"
+1 "pat-0.82NA-7.0970pix-0.50DC-14len_allangles.bmp"
+1 "pat-0.82NA-7.0970pix-0.50DC-15len_allangles.bmp"
+1 "pat-0.82NA-7.0970pix-0.50DC-16len_allangles.bmp"
+1 "pat-0.82NA-7.0970pix-0.50DC-17len_allangles.bmp"
+1 "pat-0.82NA-7.0970pix-0.50DC-18len_allangles.bmp"
+1 "pat-0.82NA-7.0970pix-0.50DC-19len_allangles.bmp"
+1 "pat-0.82NA-7.0970pix-0.50DC-20len_allangles.bmp"
+IMAGES_END
+
+DEFAULT "NA 0.82 +5.71 degrees"
+[HWA
+
+ {(A,6) }
+]
+
+"NA 0.82 -53.13 degrees"
+[HWA
+
+ {(A,69) }
+]
+
+"NA 0.82 -113.96 degrees"
+[HWA
+
+ {(A,51) }
+]
+
+"SIM NA 0.82"
+[HWA
+
+ <t(A,6) >
+ {f (A,6) }
+ <t(A,7) >
+ {f (A,7) }
+ <t(A,8) >
+ {f (A,8) }
+ <t(A,69) >
+ {f (A,69) }
+ <t(A,70) >
+ {f (A,70) }
+ <t(A,71) >
+ {f (A,71) }
+ <t(A,51) >
+ {f (A,51) }
+ <t(A,52) >
+ {f (A,52) }
+ <t(A,53) >
+ {f (A,53) }
+]
+
+"Length 10 All Orientations Triggered"
+[HWA
+
+ <t(A,84) >
+ {f (A,84) }
+]
+
+"Length 10 All Orientations"
+[HWA
+
+ {(A,84) }
+]
+
+"NA 0.82 +5.19 degrees"
+[HWA
+
+ {(A,3) }
+]
+
+"NA 0.82 -52.13 degrees"
+[HWA
+
+ {(A,63) }
+]
+
+"NA 0.82 -111.80 degrees"
+[HWA
+
+ {(A,36) }
+]
+
+"SIM NA 0.82"
+[HWA
+
+ <t(A,3) >
+ {f (A,3) }
+ <t(A,4) >
+ {f (A,4) }
+ <t(A,5) >
+ {f (A,5) }
+ <t(A,63) >
+ {f (A,63) }
+ <t(A,64) >
+ {f (A,64) }
+ <t(A,65) >
+ {f (A,65) }
+ <t(A,36) >
+ {f (A,36) }
+ <t(A,37) >
+ {f (A,37) }
+ <t(A,38) >
+ {f (A,38) }
+]
+
+"Length 11 All Orientations Triggered"
+[HWA
+
+ <t(A,85) >
+ {f (A,85) }
+]
+
+"Length 11 All Orientations"
+[HWA
+
+ {(A,85) }
+]
+
+"NA 0.82 +4.76 degrees"
+[HWA
+
+ {(A,0) }
+]
+
+"NA 0.82 -55.01 degrees"
+[HWA
+
+ {(A,81) }
+]
+
+"NA 0.82 -114.44 degrees"
+[HWA
+
+ {(A,54) }
+]
+
+"SIM NA 0.82"
+[HWA
+
+ <t(A,0) >
+ {f (A,0) }
+ <t(A,1) >
+ {f (A,1) }
+ <t(A,2) >
+ {f (A,2) }
+ <t(A,81) >
+ {f (A,81) }
+ <t(A,82) >
+ {f (A,82) }
+ <t(A,83) >
+ {f (A,83) }
+ <t(A,54) >
+ {f (A,54) }
+ <t(A,55) >
+ {f (A,55) }
+ <t(A,56) >
+ {f (A,56) }
+]
+
+"Length 12 All Orientations Triggered"
+[HWA
+
+ <t(A,86) >
+ {f (A,86) }
+]
+
+"Length 12 All Orientations"
+[HWA
+
+ {(A,86) }
+]
+
+"NA 0.82 +8.75 degrees"
+[HWA
+
+ {(A,27) }
+]
+
+"NA 0.82 -51.34 degrees"
+[HWA
+
+ {(A,57) }
+]
+
+"NA 0.82 -112.62 degrees"
+[HWA
+
+ {(A,42) }
+]
+
+"SIM NA 0.82"
+[HWA
+
+ <t(A,27) >
+ {f (A,27) }
+ <t(A,28) >
+ {f (A,28) }
+ <t(A,29) >
+ {f (A,29) }
+ <t(A,57) >
+ {f (A,57) }
+ <t(A,58) >
+ {f (A,58) }
+ <t(A,59) >
+ {f (A,59) }
+ <t(A,42) >
+ {f (A,42) }
+ <t(A,43) >
+ {f (A,43) }
+ <t(A,44) >
+ {f (A,44) }
+]
+
+"Length 13 All Orientations Triggered"
+[HWA
+
+ <t(A,87) >
+ {f (A,87) }
+]
+
+"Length 13 All Orientations"
+[HWA
+
+ {(A,87) }
+]
+
+"NA 0.82 +8.13 degrees"
+[HWA
+
+ {(A,24) }
+]
+
+"NA 0.82 -53.97 degrees"
+[HWA
+
+ {(A,75) }
+]
+
+"NA 0.82 -111.04 degrees"
+[HWA
+
+ {(A,30) }
+]
+
+"SIM NA 0.82"
+[HWA
+
+ <t(A,24) >
+ {f (A,24) }
+ <t(A,25) >
+ {f (A,25) }
+ <t(A,26) >
+ {f (A,26) }
+ <t(A,75) >
+ {f (A,75) }
+ <t(A,76) >
+ {f (A,76) }
+ <t(A,77) >
+ {f (A,77) }
+ <t(A,30) >
+ {f (A,30) }
+ <t(A,31) >
+ {f (A,31) }
+ <t(A,32) >
+ {f (A,32) }
+]
+
+"Length 14 All Orientations Triggered"
+[HWA
+
+ <t(A,88) >
+ {f (A,88) }
+]
+
+"Length 14 All Orientations"
+[HWA
+
+ {(A,88) }
+]
+
+"NA 0.82 +7.59 degrees"
+[HWA
+
+ {(A,21) }
+]
+
+"NA 0.82 -53.13 degrees"
+[HWA
+
+ {(A,69) }
+]
+
+"NA 0.82 -113.20 degrees"
+[HWA
+
+ {(A,45) }
+]
+
+"SIM NA 0.82"
+[HWA
+
+ <t(A,21) >
+ {f (A,21) }
+ <t(A,22) >
+ {f (A,22) }
+ <t(A,23) >
+ {f (A,23) }
+ <t(A,69) >
+ {f (A,69) }
+ <t(A,70) >
+ {f (A,70) }
+ <t(A,71) >
+ {f (A,71) }
+ <t(A,45) >
+ {f (A,45) }
+ <t(A,46) >
+ {f (A,46) }
+ <t(A,47) >
+ {f (A,47) }
+]
+
+"Length 15 All Orientations Triggered"
+[HWA
+
+ <t(A,89) >
+ {f (A,89) }
+]
+
+"Length 15 All Orientations"
+[HWA
+
+ {(A,89) }
+]
+
+"NA 0.82 +7.13 degrees"
+[HWA
+
+ {(A,18) }
+]
+
+"NA 0.82 -52.43 degrees"
+[HWA
+
+ {(A,66) }
+]
+
+"NA 0.82 -111.80 degrees"
+[HWA
+
+ {(A,36) }
+]
+
+"SIM NA 0.82"
+[HWA
+
+ <t(A,18) >
+ {f (A,18) }
+ <t(A,19) >
+ {f (A,19) }
+ <t(A,20) >
+ {f (A,20) }
+ <t(A,66) >
+ {f (A,66) }
+ <t(A,67) >
+ {f (A,67) }
+ <t(A,68) >
+ {f (A,68) }
+ <t(A,36) >
+ {f (A,36) }
+ <t(A,37) >
+ {f (A,37) }
+ <t(A,38) >
+ {f (A,38) }
+]
+
+"Length 16 All Orientations Triggered"
+[HWA
+
+ <t(A,90) >
+ {f (A,90) }
+]
+
+"Length 16 All Orientations"
+[HWA
+
+ {(A,90) }
+]
+
+"NA 0.82 +6.71 degrees"
+[HWA
+
+ {(A,15) }
+]
+
+"NA 0.82 -54.46 degrees"
+[HWA
+
+ {(A,78) }
+]
+
+"NA 0.82 -113.63 degrees"
+[HWA
+
+ {(A,48) }
+]
+
+"SIM NA 0.82"
+[HWA
+
+ <t(A,15) >
+ {f (A,15) }
+ <t(A,16) >
+ {f (A,16) }
+ <t(A,17) >
+ {f (A,17) }
+ <t(A,78) >
+ {f (A,78) }
+ <t(A,79) >
+ {f (A,79) }
+ <t(A,80) >
+ {f (A,80) }
+ <t(A,48) >
+ {f (A,48) }
+ <t(A,49) >
+ {f (A,49) }
+ <t(A,50) >
+ {f (A,50) }
+]
+
+"Length 17 All Orientations Triggered"
+[HWA
+
+ <t(A,91) >
+ {f (A,91) }
+]
+
+"Length 17 All Orientations"
+[HWA
+
+ {(A,91) }
+]
+
+"NA 0.82 +6.34 degrees"
+[HWA
+
+ {(A,12) }
+]
+
+"NA 0.82 -51.84 degrees"
+[HWA
+
+ {(A,60) }
+]
+
+"NA 0.82 -112.38 degrees"
+[HWA
+
+ {(A,39) }
+]
+
+"SIM NA 0.82"
+[HWA
+
+ <t(A,12) >
+ {f (A,12) }
+ <t(A,13) >
+ {f (A,13) }
+ <t(A,14) >
+ {f (A,14) }
+ <t(A,60) >
+ {f (A,60) }
+ <t(A,61) >
+ {f (A,61) }
+ <t(A,62) >
+ {f (A,62) }
+ <t(A,39) >
+ {f (A,39) }
+ <t(A,40) >
+ {f (A,40) }
+ <t(A,41) >
+ {f (A,41) }
+]
+
+"Length 18 All Orientations Triggered"
+[HWA
+
+ <t(A,92) >
+ {f (A,92) }
+]
+
+"Length 18 All Orientations"
+[HWA
+
+ {(A,92) }
+]
+
+"NA 0.82 +6.01 degrees"
+[HWA
+
+ {(A,9) }
+]
+
+"NA 0.82 -53.75 degrees"
+[HWA
+
+ {(A,72) }
+]
+
+"NA 0.82 -111.25 degrees"
+[HWA
+
+ {(A,33) }
+]
+
+"SIM NA 0.82"
+[HWA
+
+ <t(A,9) >
+ {f (A,9) }
+ <t(A,10) >
+ {f (A,10) }
+ <t(A,11) >
+ {f (A,11) }
+ <t(A,72) >
+ {f (A,72) }
+ <t(A,73) >
+ {f (A,73) }
+ <t(A,74) >
+ {f (A,74) }
+ <t(A,33) >
+ {f (A,33) }
+ <t(A,34) >
+ {f (A,34) }
+ <t(A,35) >
+ {f (A,35) }
+]
+
+"Length 19 All Orientations Triggered"
+[HWA
+
+ <t(A,93) >
+ {f (A,93) }
+]
+
+"Length 19 All Orientations"
+[HWA
+
+ {(A,93) }
+]
+
+"NA 0.82 +5.71 degrees"
+[HWA
+
+ {(A,6) }
+]
+
+"NA 0.82 -53.13 degrees"
+[HWA
+
+ {(A,69) }
+]
+
+"NA 0.82 -113.96 degrees"
+[HWA
+
+ {(A,51) }
+]
+
+"SIM NA 0.82"
+[HWA
+
+ <t(A,6) >
+ {f (A,6) }
+ <t(A,7) >
+ {f (A,7) }
+ <t(A,8) >
+ {f (A,8) }
+ <t(A,69) >
+ {f (A,69) }
+ <t(A,70) >
+ {f (A,70) }
+ <t(A,71) >
+ {f (A,71) }
+ <t(A,51) >
+ {f (A,51) }
+ <t(A,52) >
+ {f (A,52) }
+ <t(A,53) >
+ {f (A,53) }
+]
+
+"Length 20 All Orientations Triggered"
+[HWA
+
+ <t(A,94) >
+ {f (A,94) }
+]
+
+"Length 20 All Orientations"
+[HWA
+
+ {(A,94) }
+]
+
