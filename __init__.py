@@ -30,10 +30,27 @@ from skimage.draw import circle
 
 class Repertoire(object):
     """
+    A Repertoire declares the Sequences to be used, the images to
+    be shown and defines the Running Order(s).
+
+    - Sequences
+        Sequence files instruct the system which bit-plane(s) to upload to the
+        microdisplay, when to illuminate them, and for how long. Please refer
+        to [7], [8] for more information on Sequence files.
+    - Images
+        Image files contain bit-plane data to be shown on the microdisplay.
+        These can be 8-bit and / or 1-bit images. Supported image file formats
+        are .BMP, .GIF, and .PNG.
+    - Running Orders
+        A Running Order is a set of user defined instructions that combine
+        images, sequences, delays and triggers which all control display
+        operation in the Active Mode. A Repertoire may contain one or more
+        Running Orders.
     """
 
     def __init__(self, name, runnningorders=None):
         """
+        Initialize the Repertoire from a given set of running orders.
         """
         self.name = name
         # define a list of frames
@@ -53,13 +70,68 @@ class Repertoire(object):
 
     @property
     def ROs(self):
+        # protect the interal ROs
         return self._ROs
 
     def __iter__(self):
+        # we want to be able to easily iterate over the internal ROs
         return iter(self.ROs)
 
     def __len__(self):
+        # the length of a Repertoire is really the number of ROs
         return len(self.ROs)
+
+    def __str__(self):
+        # initialize the result string we'll write to
+        rep = ""
+        # make prepare sequences and bitplanes for writing.
+        rep += self.prep_bp_for_write()
+        rep += self.prep_seq_for_write()
+        # loop through internal ROs
+        for RO in self:
+            rep += str(RO)
+
+    def prep_bp_for_write(self):
+        """
+        This function prepares the internal set of bitplanes for writing a
+        rep file
+
+        It generates the string that will appear at the beginning of the
+        rep file and generates a dictionary that remembers the positions of
+        the bitplanes in the dictionary.
+
+        Both the dictionary and the str are saved as instance variables.
+        """
+        self.bp_dict = {}
+        bps = ['IMAGES']
+        for i, bp in enumerate(sorted(self.bitplanes)):
+            # we assume bitplanes have a bit depth of 1 here.
+            bps.append('1 "' + bp.name + '"')
+            self.bp_dict[bp] = i
+        bps.append('IMAGES_END\n\n')
+        self.bp_str = "\n".join(bps)
+        return self.bp_str
+
+    def prep_seq_for_write(self):
+        """
+        This function prepares the internal set of sequences for writing a
+        rep file
+
+        It generates the string that will appear at the beginning of the
+        rep file and generates a dictionary that remembers the characters
+        of the sequences in the dictionary.
+
+        Both the dictionary and the str are saved as instance variables.
+        """
+        self.seq_dict = {}
+        seqs = ['SEQUENCES']
+        for i, seq in enumerate(sorted(self.sequences)):
+            char = chr(65 + i)
+            seqs.append(char + ' "' + seq.name + '"')
+            self.seq_dict[seq] = char
+        seqs.append('SEQUENCES_END\n\n')
+        self.seq_str = "\n".join(seqs)
+        return self.seq_str
 
 
 class RunningOrder(object):
@@ -83,10 +155,17 @@ class RunningOrder(object):
 
     @property
     def frames(self):
+        # protect the internal frames
         return self._frames
 
     def __iter__(self):
+        # we want to easily iterate over the internal frames
         return iter(self.frames)
+
+    def __len__(self):
+        # the length of a RunningOrder is really the number of Frames it
+        # contains
+        return len(self.frames)
 
 
 class Frame(object):
@@ -137,8 +216,19 @@ class BitPlane(object):
 
     def __eq__(self, other):
         # we don't care about the specific names
+        # we just want to know if the data is identical
+        # we chould probably just compare the hashes.
         return np.all(self.image == other.image)
 
+    def __lt__(self, other):
+        # we don't care about the specific names
+        return self.name <= other.name
+
+    @property
+    def name(self):
+        # we want unique names
+        return hex(hash(self))
+        return self.name
 
 
 class BlankBitPlane(BitPlane):
