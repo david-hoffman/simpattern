@@ -3,7 +3,7 @@ import os
 import numpy as np
 import unittest
 
-from simpattern import BitPlane, Sequence, Frame, RunningOrder, Repertoire
+from simpattern.slm import BitPlane, Sequence, Frame, RunningOrder, Repertoire
 
 
 class TestBitPlane(unittest.TestCase):
@@ -63,6 +63,27 @@ class TestSequence(unittest.TestCase):
         seq2 = Sequence(os.path.join("junk", "junk2", "seq.sq"))
         assert seq2.name == "seq.sq"
 
+class TestFrame(unittest.TestCase):
+    """
+    Testing Frame
+    """
+    def setUp(self):
+        """
+        Set up some dummy sequences and bitplanes
+        """
+        self.seq1_path = "path1"
+        self.seq2_path = "path2"
+        self.seq1 = Sequence(self.seq1_path)
+        self.seq2 = Sequence(self.seq2_path)
+        self.data1 = np.random.randint(2, size=(512, 512))
+        self.data2 = np.random.randint(2, size=(512, 512))
+        self.bp1 = BitPlane(self.data1)
+        self.bp2 = BitPlane(self.data2)
+
+    def test_seq_bp(self):
+        "Assertion error thrown for unequal number of sequences and bitplanes"
+        assert_raises(AssertionError, Frame, (self.seq1, ), (self.bp1, self.bp2), True, False)
+
 
 class TestRepertoire(unittest.TestCase):
     """
@@ -84,7 +105,8 @@ class TestRepertoire(unittest.TestCase):
         self.frame1 = Frame((self.seq1, self.seq2), (self.bp1, self.bp2),
                        True, False)
         self.frame2 = Frame((self.seq1, ), (self.bp1, ), True, False)
-        self.RO1 = RunningOrder("Dummy Frame", (self.frame1, self.frame2))
+        self.frame3 = Frame((self.seq1, ), (self.bp1, ), False, False)
+        self.RO1 = RunningOrder("Dummy Frame", (self.frame1, self.frame2, self.frame3))
         self.RO2 = RunningOrder("Dummy Frame2", (self.frame1, ))
         self.rep = Repertoire("Dummy", (self.RO1, self.RO2))
 
@@ -124,3 +146,27 @@ class TestRepertoire(unittest.TestCase):
                         for k, seq in sorted(flip.items())])
         seq_str.append("SEQUENCES_END\n\n")
         assert_equal(test_str, "\n".join(seq_str))
+
+    def test_write_frame(self):
+        """
+        Testing the frames are put out right
+        """
+        frame = Frame((self.seq1, self.seq1), (self.bp1, self.bp1), True, True)
+        RO = RunningOrder("test_write_frame", (frame, ))
+        rep = Repertoire("Dummy rep", (RO,))
+        rep.prep_bp_for_write()
+        rep.prep_seq_for_write()
+        test_str = " {f (A,0) (A,0) }"
+        assert_equals(test_str, rep.write_frame(frame))
+
+    def test_write_RO(self):
+        """
+        Testing the frames are put out right
+        """
+        frame = Frame((self.seq1, self.seq1), (self.bp1, self.bp1), True, True)
+        RO = RunningOrder("test_write_frame", (frame, ))
+        rep = Repertoire("Dummy rep", (RO,))
+        rep.prep_bp_for_write()
+        rep.prep_seq_for_write()
+        test_str = '"test_write_frame"\n[HWA\n\n {f (A,0) (A,0) }\n]'
+        assert_equals(test_str, rep.write_RO(RO))
