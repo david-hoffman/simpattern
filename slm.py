@@ -13,19 +13,9 @@ import collections
 import zipfile
 import hashlib
 import numpy as np
-import numexpr as ne
-# for minimizing the difference between the desired frequency and the calculated one
-from scipy.optimize import minimize
-# PIL allows us to write binary images, though we need a cludge, see 'Writing Binary Files.ipynb'
+# PIL allows us to write binary images, though we need a cludge
+# see 'Writing Binary Files.ipynb'
 from PIL import Image
-try:
-    from pyfftw.interfaces.numpy_fft import (fftn, ifftshift, fftshift, fftfreq)
-    import pyfftw
-    # Turn on the cache for optimum performance
-    pyfftw.interfaces.cache.enable()
-except ImportError:
-    from numpy.fft import (fftn, ifftshift, fftshift, fftfreq)
-from skimage.draw import circle
 
 
 class Repertoire(object):
@@ -181,6 +171,12 @@ class Repertoire(object):
             result += int_result + [">"]
 
         return "".join(result)
+
+    def write_repz11(self):
+        raise NotImplementedError
+
+    def write_ini(self):
+        raise NotImplementedError
 
 
 class RunningOrder(object):
