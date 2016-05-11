@@ -1,0 +1,55 @@
+SEQUENCES
+A "48070 HHMI 10ms.seq11"
+B "48071 HHMI 50ms.seq11"
+SEQUENCES_END
+
+IMAGES
+1 "pat-6.92003pixel-0.5DC-Ang0Ph0.bmp"
+1 "pat-6.92003pixel-0.5DC-Ang0Ph1.bmp"
+1 "pat-6.92003pixel-0.5DC-Ang0Ph2.bmp"
+1 "pat-6.92003pixel-0.5DC-Ang0Ph3.bmp"
+1 "pat-6.92003pixel-0.5DC-Ang0Ph4.bmp"
+1 "pat-6.92929pixel-0.5DC-Ang1Ph0.bmp"
+1 "pat-6.92929pixel-0.5DC-Ang1Ph1.bmp"
+1 "pat-6.92929pixel-0.5DC-Ang1Ph2.bmp"
+1 "pat-6.92929pixel-0.5DC-Ang1Ph3.bmp"
+1 "pat-6.92929pixel-0.5DC-Ang1Ph4.bmp"
+1 "pat-6.93262pixel-0.5DC-Ang2Ph0.bmp"
+IMAGES_END
+
+DEFAULT "NA 0.85 5 phases 1 angle"
+[HWA 
+
+ <t(A,0) >
+ {f (A,0) }
+ <t(A,1) >
+ {f (A,1) }
+ <t(A,2) >
+ {f (A,2) }
+ <t(A,3) >
+ {f (A,3) }
+ <t(A,4) >
+ {f (A,4) }
+]
+
+"NA 0.80 5 phases 1 angle"
+[HWA 
+
+ <t(A,5) >
+ {f (A,5) }
+ <t(A,6) >
+ {f (A,6) }
+ <t(A,7) >
+ {f (A,7) }
+ <t(A,8) >
+ {f (A,8) }
+ <t(A,9) >
+ {f (A,9) }
+]
+
+"NA 0.85 3 angles no trig"
+[HWA 
+
+ {(B,0) (B,5) (B,10) }
+]
+

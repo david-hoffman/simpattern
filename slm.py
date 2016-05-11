@@ -85,13 +85,15 @@ class Repertoire(object):
         # initialize the result string we'll write to
         rep = ""
         # make prepare sequences and bitplanes for writing.
-        rep += self.prep_bp_for_write()
         rep += self.prep_seq_for_write()
+        rep += self.prep_bp_for_write()
         # make the first RO "Default"
         rep += "DEFAULT "
         # loop through internal ROs
         for RO in self:
             rep += self.write_RO(RO)
+            rep += "\n\n"
+        return rep
 
     def prep_bp_for_write(self):
         """
@@ -104,14 +106,21 @@ class Repertoire(object):
 
         Both the dictionary and the str are saved as instance variables.
         """
+        # initialize dictionary for bitplanes
         self.bp_dict = {}
+        # start a list for the final printout
         bps = ['IMAGES']
+        # iterate through bitplanes, which will be sorted be name
         for i, bp in enumerate(sorted(self.bitplanes)):
             # we assume bitplanes have a bit depth of 1 here.
             bps.append('1 "' + bp.name + '"')
+            # update dict
             self.bp_dict[bp] = i
+        # finish printout
         bps.append('IMAGES_END\n\n')
+        # save string internally for later use
         self.bp_str = "\n".join(bps)
+        # return right away for ease of use
         return self.bp_str
 
     def prep_seq_for_write(self):
@@ -125,13 +134,21 @@ class Repertoire(object):
 
         Both the dictionary and the str are saved as instance variables.
         """
+        # initialize dictionary for sequences
         self.seq_dict = {}
+        # start a list for final printout
         seqs = ['SEQUENCES']
+        # iterate through sequences
         for i, seq in enumerate(sorted(self.sequences)):
+            # find right character
             char = chr(65 + i)
+            # build printout list
             seqs.append(char + ' "' + seq.name + '"')
+            # update dict
             self.seq_dict[seq] = char
+        # finish printout
         seqs.append('SEQUENCES_END\n\n')
+        # save string for later and return right aways for convenience
         self.seq_str = "\n".join(seqs)
         return self.seq_str
 
@@ -140,7 +157,7 @@ class Repertoire(object):
         Function that writes RO using the internal dictionaries
         """
         # put out name
-        result = ['"' + RO.name + '"', '[HWA\n']
+        result = ['"' + RO.name + '"', '[HWA \n']
         result.extend([self.write_frame(frame) for frame in RO])
         result.append(']')
         return '\n'.join(result)
@@ -148,14 +165,14 @@ class Repertoire(object):
     def write_frame(self, frame):
         seq_dict = self.seq_dict
         bp_dict = self.bp_dict
-        int_result = ["({},{}) ".format(seq_dict[seq], bp_dict[bp])
-                      for seq, bp in zip(frame.sequences, frame.bitplanes)]
+        int_result = []
+        for seq, bp in zip(frame.sequences, frame.bitplanes):
+            int_result.append("({},{}) ".format(seq_dict[seq], bp_dict[bp]))
+
         if frame.looped:
             result = [" {"]
             if frame.triggered:
                 result += ["f "]
-            else:
-                result += [" "]
             result += int_result + ["}"]
         else:
             result = [" <"]
@@ -212,7 +229,8 @@ class Frame(object):
     def __init__(self, sequences, bitplanes, looped, triggered):
         self.looped = looped
         self.triggered = triggered
-        assert len(sequences) == len(bitplanes), "Number of bitplanes doesn't equal number of sequences!"
+        assert len(sequences) == len(bitplanes), ("Number of bitplanes doesn't"
+                                                  "equal number of sequences!")
         self.sequences = sequences
         self.bitplanes = bitplanes
 
@@ -239,13 +257,21 @@ class BitPlane(object):
     # This class should take care of all the lowlevel tasks we may later
     # want to implement, such as loading from disk writing to disk, excetera
 
-    def __init__(self, image=None):
+    def __init__(self, image, name=None):
         """
         """
+        # make a copy so the external array can be used
         self.image = image
+        # make it unchangeable
+        self.image.flags.writeable = False
+        if name is None:
+            self._name = hex(hash(self))
+        else:
+            self._name = name
 
     def __hash__(self):
-        return hash(hashlib.sha1(self.image))
+        return int.from_bytes(hashlib.md5(self.image.data).digest(),
+                              byteorder="big", signed=True)
 
     def __eq__(self, other):
         # we don't care about the specific names
@@ -260,8 +286,7 @@ class BitPlane(object):
     @property
     def name(self):
         # we want unique names
-        return hex(hash(self))
-        return self.name
+        return self._name
 
 
 class BlankBitPlane(BitPlane):

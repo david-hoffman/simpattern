@@ -11,13 +11,6 @@ class TestBitPlane(unittest.TestCase):
     Testing functionality of BitPlane class
     """
 
-    def test_hash(self):
-        """
-        Make sure BitPlane aren't hashable without data
-        """
-        bp = BitPlane()
-        assert_raises(TypeError, hash, bp)
-
     def test_name(self):
         """
         The name the hash
@@ -25,12 +18,11 @@ class TestBitPlane(unittest.TestCase):
         bp = BitPlane(np.random.randint(1, size=(512, 512)))
         assert hex(hash(bp)) == bp.name
 
-    def test_hash_wdata(self):
+    def test_hash(self):
         """
         Make sure BitPlane's are hashable
         """
-        bp = BitPlane(np.random.randint(1, size=(512, 512)))
-        hash(bp)
+        hash(BitPlane(np.random.randint(1, size=(512, 512))))
 
     def test_eq(self):
         """
@@ -168,5 +160,71 @@ class TestRepertoire(unittest.TestCase):
         rep = Repertoire("Dummy rep", (RO,))
         rep.prep_bp_for_write()
         rep.prep_seq_for_write()
-        test_str = '"test_write_frame"\n[HWA\n\n {f (A,0) (A,0) }\n]'
+        test_str = '"test_write_frame"\n[HWA \n\n {f (A,0) (A,0) }\n]'
         assert_equals(test_str, rep.write_RO(RO))
+
+    def test_write_rep(self):
+        """
+        Testing the rep is put out right
+        """
+        frame = Frame((self.seq1, self.seq1), (self.bp1, self.bp1), True, True)
+        RO = RunningOrder("test_write_frame", (frame, ))
+        rep = Repertoire("Dummy rep", (RO,))
+        test_str = 'SEQUENCES\nA "' + self.seq1_path + '"\nSEQUENCES_END\n\n'
+        test_str += 'IMAGES\n1 "' + self.bp1.name + '"\nIMAGES_END\n\n'
+        test_str += 'DEFAULT "test_write_frame"\n[HWA \n\n {f (A,0) (A,0) }\n]\n\n'
+        assert_equals(test_str, str(rep))
+
+
+class TestRepertoire2(unittest.TestCase):
+    """
+    Testing functionality of BitPlane class
+    """
+
+    maxDiff = None
+
+    def setUp(self):
+        """
+        Set up some dummy sequences and bitplanes
+        """
+        with open(os.path.join(os.path.dirname(__file__), "test_rep.txt")) as fn:
+            str_list = fn.readlines()
+        self.strcmp = "".join(str_list)
+
+    def test_rep(self):
+        """
+        Do we match the test file?
+        """
+        seqA = Sequence("48070 HHMI 10ms.seq11")
+        seqB = Sequence("48071 HHMI 50ms.seq11")
+        bp_names = [
+            "pat-6.92003pixel-0.5DC-Ang0Ph0.bmp",
+            "pat-6.92003pixel-0.5DC-Ang0Ph1.bmp",
+            "pat-6.92003pixel-0.5DC-Ang0Ph2.bmp",
+            "pat-6.92003pixel-0.5DC-Ang0Ph3.bmp",
+            "pat-6.92003pixel-0.5DC-Ang0Ph4.bmp",
+            "pat-6.92929pixel-0.5DC-Ang1Ph0.bmp",
+            "pat-6.92929pixel-0.5DC-Ang1Ph1.bmp",
+            "pat-6.92929pixel-0.5DC-Ang1Ph2.bmp",
+            "pat-6.92929pixel-0.5DC-Ang1Ph3.bmp",
+            "pat-6.92929pixel-0.5DC-Ang1Ph4.bmp",
+            "pat-6.93262pixel-0.5DC-Ang2Ph0.bmp"
+        ]
+        bp_list = [BitPlane(np.random.randint(2, size=(512, 512)), name)
+                   for name in bp_names]
+
+        RO0_frames = [Frame((seqA,), (bp, ), looped, True)
+                      for bp in bp_list[:5]
+                      for looped in (False, True)]
+        RO1_frames = [Frame((seqA,), (bp, ), looped, True)
+                      for bp in bp_list[5:-1]
+                      for looped in (False, True)]
+        RO2_frames = [Frame((seqB, seqB, seqB), bp_list[::5], True, False)]
+        RO0 = RunningOrder("NA 0.85 5 phases 1 angle", RO0_frames)
+        RO1 = RunningOrder("NA 0.80 5 phases 1 angle", RO1_frames)
+        RO2 = RunningOrder("NA 0.85 3 angles no trig", RO2_frames)
+        rep = Repertoire("test_rep", (RO0, RO1, RO2))
+        assert_equals.__self__.maxDiff = None
+        print(str(rep))
+        print(self.strcmp)
+        assert_equals(str(rep), self.strcmp)
