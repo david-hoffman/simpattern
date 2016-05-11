@@ -16,6 +16,7 @@ import numpy as np
 # PIL allows us to write binary images, though we need a cludge
 # see 'Writing Binary Files.ipynb'
 from PIL import Image
+from io import BytesIO
 
 
 class Repertoire(object):
@@ -71,6 +72,7 @@ class Repertoire(object):
     def addRO(self, RO):
         # add the RO to the internal list
         self._ROs.append(RO)
+        # update the internal sets of sequences and bitplanes
         self.sequences.update({seq for frame in RO
                                for seq in frame.sequences})
         self.bitplanes.update({bp for frame in RO
@@ -116,7 +118,7 @@ class Repertoire(object):
         # iterate through bitplanes, which will be sorted be name
         for i, bp in enumerate(sorted(self.bitplanes)):
             # we assume bitplanes have a bit depth of 1 here.
-            bps.append('1 "' + bp.name + '"')
+            bps.append('1 "' + bp.name + '.bmp"')
             # update dict
             self.bp_dict[bp] = i
         # finish printout
@@ -185,8 +187,35 @@ class Repertoire(object):
 
         return "".join(result)
 
-    def write_repz11(self):
-        raise NotImplementedError
+    def write_repz11(self, path=""):
+        """
+        A function for writing a complete repz11 file
+        Including a repfile, images and moving sequences
+
+        Parameters
+        ----------
+        path : path (optional)
+            path to place the repz11 file.
+        """
+
+        with zipfile.ZipFile(path + self.name + ".repz11", "w",
+                             compression=zipfile.ZIP_DEFLATED) as zf:
+            # write sequences to zipfile
+            for seq in self.sequences:
+                zf.write(seq.path, arcname=seq.name)
+            # write rep to zipfile
+            zf.writestr(self.name + ".rep", str(self).encode())
+            # write images to zipfile
+            for bp in self.bitplanes:
+                # form the 8 bit grayscale image
+                bp_img = Image.fromarray(
+                    (bp.image * 255).astype('uint8'), mode='L')
+                # create an output bytes buffer to save the image to
+                output = BytesIO()
+                # save the image to the buffer
+                bp_img.convert('1').save(output, "BMP")
+                # write the buffer to the zipfile
+                zf.writestr(bp.name + ".bmp", output.getvalue())
 
     def write_ini(self):
         raise NotImplementedError

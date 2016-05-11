@@ -152,7 +152,7 @@ class TestRepertoire(unittest.TestCase):
         test_str = self.rep.prep_bp_for_write()
         bp_str = ["IMAGES"]
         flip = {v: k for k, v in self.rep.bp_dict.items()}
-        bp_str.extend(['1 "' + bp.name + '"'
+        bp_str.extend(['1 "' + bp.name + '.bmp"'
                        for k, bp in sorted(flip.items())])
         bp_str.append("IMAGES_END\n\n")
         assert_equal(test_str, "\n".join(bp_str))
@@ -201,7 +201,7 @@ class TestRepertoire(unittest.TestCase):
         RO = RunningOrder("test_write_frame", (frame, ))
         rep = Repertoire("Dummy rep", (RO,))
         test_str = 'SEQUENCES\nA "' + self.seq1_path + '"\nSEQUENCES_END\n\n'
-        test_str += 'IMAGES\n1 "' + self.bp1.name + '"\nIMAGES_END\n\n'
+        test_str += 'IMAGES\n1 "' + self.bp1.name + '.bmp"\nIMAGES_END\n\n'
         test_str += 'DEFAULT "test_write_frame"\n[HWA \n\n {f (A,0) (A,0) }\n]\n\n'
         assert_equals(test_str, str(rep))
 
@@ -228,17 +228,17 @@ class TestRepertoire2(unittest.TestCase):
         seqA = Sequence("48070 HHMI 10ms.seq11")
         seqB = Sequence("48071 HHMI 50ms.seq11")
         bp_names = [
-            "pat-6.92003pixel-0.5DC-Ang0Ph0.bmp",
-            "pat-6.92003pixel-0.5DC-Ang0Ph1.bmp",
-            "pat-6.92003pixel-0.5DC-Ang0Ph2.bmp",
-            "pat-6.92003pixel-0.5DC-Ang0Ph3.bmp",
-            "pat-6.92003pixel-0.5DC-Ang0Ph4.bmp",
-            "pat-6.92929pixel-0.5DC-Ang1Ph0.bmp",
-            "pat-6.92929pixel-0.5DC-Ang1Ph1.bmp",
-            "pat-6.92929pixel-0.5DC-Ang1Ph2.bmp",
-            "pat-6.92929pixel-0.5DC-Ang1Ph3.bmp",
-            "pat-6.92929pixel-0.5DC-Ang1Ph4.bmp",
-            "pat-6.93262pixel-0.5DC-Ang2Ph0.bmp"
+            "pat-6.92003pixel-0.5DC-Ang0Ph0",
+            "pat-6.92003pixel-0.5DC-Ang0Ph1",
+            "pat-6.92003pixel-0.5DC-Ang0Ph2",
+            "pat-6.92003pixel-0.5DC-Ang0Ph3",
+            "pat-6.92003pixel-0.5DC-Ang0Ph4",
+            "pat-6.92929pixel-0.5DC-Ang1Ph0",
+            "pat-6.92929pixel-0.5DC-Ang1Ph1",
+            "pat-6.92929pixel-0.5DC-Ang1Ph2",
+            "pat-6.92929pixel-0.5DC-Ang1Ph3",
+            "pat-6.92929pixel-0.5DC-Ang1Ph4",
+            "pat-6.93262pixel-0.5DC-Ang2Ph0"
         ]
         bp_list = [BitPlane(np.random.randint(2, size=(512, 512)), name)
                    for name in bp_names]
