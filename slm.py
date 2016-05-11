@@ -50,7 +50,12 @@ class Repertoire(object):
             self.sequences = set()
             self.bitplanes = set()
         else:
-            self._ROs = runnningorders
+            try:
+                # turn passed arg to list
+                self._ROs = list(runnningorders)
+            except TypeError:
+                # if not iterable, then make list
+                self._ROs = [runnningorders]
             # build set of sequences in the repertoire
             self.sequences = {seq for RO in self for frame in RO
                               for seq in frame.sequences}
@@ -62,6 +67,14 @@ class Repertoire(object):
     def ROs(self):
         # protect the interal ROs
         return self._ROs
+
+    def addRO(self, RO):
+        # add the RO to the internal list
+        self._ROs.append(RO)
+        self.sequences.update({seq for frame in RO
+                               for seq in frame.sequences})
+        self.bitplanes.update({bp for frame in RO
+                               for bp in frame.bitplanes})
 
     def __iter__(self):
         # we want to be able to easily iterate over the internal ROs
@@ -187,6 +200,8 @@ class RunningOrder(object):
     Controller to execute Compiled Sequences on selected bit-planes/n-bit
     images.
     """
+    # NOTE: it might be worthwhile to just subclass a list for this
+    # give a list a name attribute
 
     def __init__(self, name, frames=None):
         """

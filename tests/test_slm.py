@@ -13,10 +13,10 @@ class TestBitPlane(unittest.TestCase):
 
     def test_name(self):
         """
-        The name the hash
+        The name is the hash when no name is passed
         """
         bp = BitPlane(np.random.randint(1, size=(512, 512)))
-        assert hex(hash(bp)) == bp.name
+        assert_equal(hex(hash(bp)), bp.name)
 
     def test_hash(self):
         """
@@ -26,12 +26,26 @@ class TestBitPlane(unittest.TestCase):
 
     def test_eq(self):
         """
-        Make sure BitPlane's are equal
+        Make sure BitPlane's with the same data are equal
         """
+        # make fake data
         data = np.random.randint(1, size=(512, 512))
+        # make two bitplanes containing same values but different underlying
+        # objects
         bp1 = BitPlane(data)
-        bp2 = BitPlane(data)
-        assert bp1 == bp2, "bp1 and bp2 are not equal!"
+        bp2 = BitPlane(data.copy())
+        # test equality
+        assert_equal(bp1, bp2)
+        # same thing, but here make two different objects differently
+        bp3 = BitPlane(np.ones_like(data))
+        bp4 = BitPlane(np.ones_like(data))
+        assert_equal(bp3, bp4)
+        # make sure there's a hash collision between objects containg same
+        # data
+        assert_equal(len({bp3, bp4, bp1, bp2}), 2)
+        # but show objects are not the same
+        assert_is_not(bp1, bp2)
+        assert_is_not(bp3, bp4)
 
 
 class TestSequence(unittest.TestCase):
@@ -51,9 +65,10 @@ class TestSequence(unittest.TestCase):
         Make sure sequence name is determined correctly
         """
         seq1 = Sequence("path")
-        assert seq1.name == "path"
+        assert_equal(seq1.name, "path")
         seq2 = Sequence(os.path.join("junk", "junk2", "seq.sq"))
-        assert seq2.name == "seq.sq"
+        assert_equal(seq2.name, "seq.sq")
+
 
 class TestFrame(unittest.TestCase):
     """
@@ -74,7 +89,8 @@ class TestFrame(unittest.TestCase):
 
     def test_seq_bp(self):
         "Assertion error thrown for unequal number of sequences and bitplanes"
-        assert_raises(AssertionError, Frame, (self.seq1, ), (self.bp1, self.bp2), True, False)
+        assert_raises(AssertionError, Frame, (self.seq1, ),
+                      (self.bp1, self.bp2), True, False)
 
 
 class TestRepertoire(unittest.TestCase):
@@ -108,12 +124,26 @@ class TestRepertoire(unittest.TestCase):
         """
         assert_not_equal(self.bp1, self.bp2)
 
+    def test_addRO(self):
+        """
+        Testing that adding a new RO updates internals right
+        """
+        seq3_path = "path3"
+        seq3 = Sequence(seq3_path)
+        data3 = np.random.randint(2, size=(512, 512))
+        bp3 = BitPlane(data3)
+        frame = Frame((seq3, ), (bp3, ), True, False)
+        RO3 = RunningOrder("Testy", (frame, ))
+        self.rep.addRO(RO3)
+        assert_in(bp3, self.rep.bitplanes)
+        assert_in(seq3, self.rep.sequences)
+
     def test_rep_duplicates(self):
         """
         Test for duplicates
         """
-        assert len(self.rep) == 2
-        assert self.rep.sequences == {self.seq1, self.seq2}
+        assert_equal(len(self.rep), 2)
+        assert_equal(self.rep.sequences, {self.seq1, self.seq2})
 
     def test_rep_bp_write(self):
         """
@@ -224,7 +254,4 @@ class TestRepertoire2(unittest.TestCase):
         RO1 = RunningOrder("NA 0.80 5 phases 1 angle", RO1_frames)
         RO2 = RunningOrder("NA 0.85 3 angles no trig", RO2_frames)
         rep = Repertoire("test_rep", (RO0, RO1, RO2))
-        assert_equals.__self__.maxDiff = None
-        print(str(rep))
-        print(self.strcmp)
         assert_equals(str(rep), self.strcmp)
