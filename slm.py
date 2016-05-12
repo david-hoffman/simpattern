@@ -2,7 +2,8 @@
 """
 Created on 5/10/2016
 
-@author: david hoffman
+@author: david-hoffman
+@copyright : David Hoffman
 
 Package holding the necessary functions for generating SIM patterns for
 the QXGA-3DM writing repz11 files and ini files for labVIEW
@@ -17,6 +18,22 @@ import numpy as np
 # see 'Writing Binary Files.ipynb'
 from PIL import Image
 from io import BytesIO
+
+
+def tuplify(arg):
+    """
+    A utility function to convert args to tuples
+    """
+    # strings need special handling
+    if isinstance(arg, str):
+        return (arg, )
+    # other wise try and make it a tuple
+    try:
+        # turn passed arg to list
+        return tuple(arg)
+    except TypeError:
+        # if not iterable, then make list
+        return (arg, )
 
 
 class Repertoire(object):
@@ -51,12 +68,7 @@ class Repertoire(object):
             self.sequences = set()
             self.bitplanes = set()
         else:
-            try:
-                # turn passed arg to list
-                self._ROs = list(runnningorders)
-            except TypeError:
-                # if not iterable, then make list
-                self._ROs = [runnningorders]
+            self._ROs = list(tuplify(runnningorders))
             # build set of sequences in the repertoire
             self.sequences = {seq for RO in self for frame in RO
                               for seq in frame.sequences}
@@ -240,7 +252,7 @@ class RunningOrder(object):
         if frames is None:
             self._frames = []
         else:
-            self._frames = frames
+            self._frames = list(tuplify(frames))
 
     @property
     def frames(self):
@@ -269,17 +281,25 @@ class Frame(object):
     def __init__(self, sequences, bitplanes, looped, triggered):
         self.looped = looped
         self.triggered = triggered
-        assert len(sequences) == len(bitplanes), ("Number of bitplanes doesn't"
-                                                  "equal number of sequences!")
-        self.sequences = sequences
-        self.bitplanes = bitplanes
+        tsequences = tuplify(sequences)
+        tbitplanes = tuplify(bitplanes)
+        assert len(tsequences) == len(tbitplanes), ("Number of bitplanes does"
+                                                    " not equal number of"
+                                                    " sequences!")
+        self.sequences = tsequences
+        self.bitplanes = tbitplanes
 
 
-class Sequence(collections.namedtuple("Sequence", ["path"])):
+class Sequence(object):
     """
     A class representing a sequence
     """
-    __slots__ = ()
+
+    def __init__(self, path):
+        """
+        Initialize with path to sequence file.
+        """
+        self.path = path
 
     @property
     def name(self):
@@ -288,6 +308,16 @@ class Sequence(collections.namedtuple("Sequence", ["path"])):
 
     def __hash__(self):
         return hash(self.path)
+
+    def __eq__(self, other):
+        # we don't care about the specific names
+        # we just want to know if the data is identical
+        # we chould probably just compare the hashes.
+        return self.path == other.path
+
+    def __lt__(self, other):
+        # we don't care about the specific names
+        return self.name <= other.name
 
 
 class BitPlane(object):
@@ -327,11 +357,3 @@ class BitPlane(object):
     def name(self):
         # we want unique names
         return self._name
-
-
-class BlankBitPlane(BitPlane):
-    pass
-
-
-class GridBitPlane(BitPlane):
-    pass

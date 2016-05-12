@@ -1,3 +1,13 @@
+# -*- coding: utf-8 -*-
+"""
+Created on 5/10/2016
+
+@author: david-hoffman
+@copyright : David Hoffman
+
+Package holding the necessary functions for generating SIM patterns for
+the QXGA-3DM writing repz11 files and ini files for labVIEW
+"""
 
 import numpy as np
 from numpy.linalg import norm
@@ -11,39 +21,30 @@ try:
     pyfftw.interfaces.cache.enable()
 except ImportError:
     from numpy.fft import ifftshift, fftshift, rfftn, irfftn
-from skimage.draw import circle
 from dphutils import slice_maker
-from .slm import RunningOrder, BitPlane, Repertoire, Sequence
+from .slm import *
 # define pi for later use
 pi = np.pi
 
 
 # newest one
-def pattern(angle, period, onfrac=0.5, phase_idx=0., phase_offset=0.,
-            nphases=5, sizex=2048, sizey=1536, SIM_2D=True):
+def pattern(angle, period, phi=0, onfrac=0.5, shape=(1536, 2048), SIM_2D=True):
     '''
-    Generates a binary SLM pattern for SIM
-    Generates a sine wave and then binarizes it
-    designed for my orientation
+    Generates a binary SLM pattern for SIM by generating a 2D sine wave
+    and binarizing it
+
     Parameters
     ----------
-    x : array_like
-        the $\vec{a}$ from [1]. Defines the pattern orientation
+    angle : float
+        Defines the pattern orientation
     period : float
         Defines the period of the pattern
+    phi : float
+        phase of the pattern.
     onfrac : float
         The fraction of on pixels in the pattern
-    phase_idx : int
-        The phase of the pattern (see `nphases` for more info)
-    phase_offset : float
-        The offset in phase, mostly used for aligning patterns of different
-        colors
-    nphases : int
-        the number of phases
-    sizex : int
-        size of the pattern
-    sizey : int
-        size of the pattern
+    shape : tuple
+        shape of the pattern
 
     Returns
     -------
@@ -53,22 +54,14 @@ def pattern(angle, period, onfrac=0.5, phase_idx=0., phase_offset=0.,
     if not 0 < onfrac < 1:
         raise ValueError(('onfrac must have a value between'
                           ' 0 and 1. onfrac = {}').format(onfrac))
-    if not 2 <= period <= max(sizex, sizey):
+    if not 2 <= period <= max(shape):
         raise ValueError(('period must be larger than 2 (nyquist limit)'
                           ' and smaller than the size of the array (DC limit)'
                           '. period = {}').format(period))
-    if SIM_2D:
-        # Then we only want to take steps of 2pi/n in illumination which means
-        # pi/n at the SLM
-        phase_step = 2
-    else:
-        phase_step = 1
     # generate grids
-    yy, xx = np.indices((sizey, sizex))
+    yy, xx = np.indices(shape)
     # here's the pattern frequency
     freq = 2 * pi / period
-    # calculate phase
-    phi = (phase_idx / nphases / phase_step) * (2 * pi) + phase_offset
     # our sine goes from -1 to 1 while onfrac goes from 0,1 so move onfrac
     # into the right range
     onfrac = onfrac * 2 - 1
@@ -168,7 +161,7 @@ def opt_angle(period, iangle, **kwargs):
     def objf_l1(angle):
         calc_angle = pattern_params(angle, period, **kwargs)['angle']
         return abs(calc_angle - iangle)
-    return minimize(objf_l1, iperiod, method='Nelder-Mead')['x']
+    return minimize(objf_l1, iangle, method='Nelder-Mead')['x']
 
 
 def make_angles(init_angle, num_angles):
@@ -209,22 +202,6 @@ def ideal_period(wavelength, na=0.85):
     return period
 
 
-def tuplify(arg):
-    """
-    A utility function to convert args to tuples
-    """
-    # strings need special handling
-    if isinstance(arg, str):
-        return (arg, )
-    # other wise try and make it a tuple
-    try:
-        # turn passed arg to list
-        return tuple(arg)
-    except TypeError:
-        # if not iterable, then make list
-        return (arg, )
-
-
 class SIMRepertoire(object):
     """
     A class that takes care of the actual generation of images
@@ -232,9 +209,10 @@ class SIMRepertoire(object):
     This is _not_ a subclass of slm.Repertoire, but does hold an instance
     """
 
-    blank = BitPlane(np.zeros((1536, 2048)), "Blank")
+    blank_bitplane = BitPlane(np.zeros((1536, 2048)), "Blank")
 
-    def __init__(self, name, wls, nas, orders, norientations, seq):
+    def __init__(self, name, wls, nas, orders, norientations, seq,
+                 SIM_2D=True):
         """
         Parameters
         ----------
@@ -256,26 +234,45 @@ class SIMRepertoire(object):
         self.nas = tuplify(nas)
         # what non-linear orders to try
         self.orders = tuplify(orders)
+        if min(self.orders) < 1:
+            raise RuntimeError("Orders less than 0")
         # for now hard code, we have to double the phases
         # so we can do 90 deg phase stepping.
-        self.nphases = prod(orders) * 2
-        if prod(len(self.nas), len(self.wls),
-                norientations + 1, self.nphases) + 1 > 1024:
+        if SIM_2D:
+            # Then we only want to take steps of 2pi/n in illumination which
+            # means pi/n at the SLM
+            phase_step = 2
+        else:
+            phase_step = 1
+        # calculate the number of phases needed
+        self.nphases = np.prod(np.array(orders) * 2 + 1)
+        # calculate actual phases
+        self.phases = [(n / self.nphases / phase_step) * (2 * pi)
+                       for n in range(self.nphases)]
+        # if we're doing nonlinear, add flipped patterns
+        if max(orders) > 1:
+            self.phases += list(np.array(self.phases) + pi / 2)
+        # make sure the proposed repertoire will fit
+        if np.prod((len(self.nas), len(self.wls),
+                    norientations + 1, len(self.phases))) + 1 > 1024:
             raise RuntimeError("These settings will generate too many")
         # For the current microscope we can only have one set of orientation
         if norientations == 3:
-            init_angle = 11.6
+            init_angle = np.deg2rad(11.6)
         elif norientations == 5:
-            init_angle = 9.0
+            init_angle = np.deg2rad(9.0)
         elif norientations == 7:
-            init_angle = 0.9
+            init_angle = np.deg2rad(0.9)
         else:
             raise RuntimeError("number of orientations not valid, ",
                                norientations)
-        self.angles = make_angles(norientations, init_angle)
-
+        self.angles = make_angles(init_angle, norientations)
         # once we have all this info we can start making bitplanes
         self.make_bitplanes()
+
+    def clear_rep(self):
+        # make new internal Repertoire to hold everything.
+        self.rep = Repertoire(self.name)
 
     def make_bitplanes(self):
         """
@@ -285,27 +282,82 @@ class SIMRepertoire(object):
         # first level is wl
         self.bitplanes = {wl: {
             na: [
-                [BitPlane(pattern(ang, ideal_period(wl, na), phase_idx=n,
-                                  nphases=self.nphases),
+                [BitPlane(pattern(ang, ideal_period(wl, na), phi),
                           gen_name(ang, wl, na, n))
-                 for n in range(self.nphases)] for ang in self.angles]
+                 for n, phi in enumerate(self.phases)] for ang in self.angles]
             for na in self.nas
         } for wl in self.wls}
 
     def make_ROs(self):
         for wl, na_dict in self.bitplanes.items():
             for na, angle_list in na_dict.items():
-                self.gen_fast_sims(wl, na, angle_list)
-                self.gen_super_sims(wl, na, angle_list)
+                self.gen_sims(wl, na, angle_list)
                 self.gen_all_angles(wl, na, angle_list)
 
+    def gen_sims(self, wl, na, angle_list):
+        """
+        Do linear and nonlinear SIMs here
+        """
+        name_str = ("{} nm ".format(wl) +
+                    "{} phases " +
+                    "{:.2f} NA ".format(na) +
+                    "{} SIM")
+        for order in self.orders:
+            num_phases = order * 2 + 1
+            d = self.nphases // num_phases
+            print(num_phases)
+            print(d)
+            if order == 1:
+                # linear SIM case
+                frames = [Frame(self.seq, phase_bp, looped, True)
+                          for phase_list in angle_list
+                          for phase_bp in phase_list[:self.nphases:d]
+                          for looped in (False, True)]
+                RO_name = name_str.format(num_phases, "Linear")
+            else:
+                # non-linear SIM case
+                frames = []
+                for phase_list in angle_list:
+                    off_phases = phase_list[self.nphases::d]
+                    on_phases = phase_list[:self.nphases:d]
+                    assert len(off_phases) == len(on_phases)
+                    reactivation = [self.blank_bitplane] * len(off_phases)
+                    frames.extend([Frame(self.seq, phase_bp, looped, True)
+                                   for series in zip(reactivation, off_phases,
+                                                     on_phases)
+                                   for phase_bp in series
+                                   for looped in (False, True)])
+                RO_name = name_str.format(num_phases, "Non-Linear")
+            RO = RunningOrder(RO_name, frames)
+            self.rep.addRO(RO)
+        # make the super sim here
+        super_frames = [Frame(self.seq, phase_bp, looped, True)
+                        for phase_list in angle_list
+                        for phase_bp in phase_list[:self.nphases]
+                        for looped in (False, True)]
+        RO_super_name = name_str.format(self.nphases, "Super")
+        RO_super = RunningOrder(RO_super_name, super_frames)
+        self.rep.addRO(RO_super)
+
     def gen_all_angles(self, wl, na, angle_list):
+        """
+        Makes a RunningOrder to display all angles at once
+        """
+        # make an array of the first phase of the data
         data_array = np.array([
             ang[0].image for ang in angle_list
         ])
+        # take the mean and threshold at 0.5 (binarize)
         bitplane = data_array.mean(0) > 0.5
-        name = "AllAngles-{}nm-{:.2f}NA".format(wl, na)
-        all_angles_bitplane = BitPlane(bitplane, name)
+        # generate names
+        bp_name = "AllAngles-{}nm-{:.2f}NA".format(wl, na)
+        RO_name = "All Angles {} nm {:.2f} NA".format(wl, na)
+        # generate bitplane
+        all_angles_bitplane = BitPlane(bitplane, bp_name)
+        # generate Frame
+        frame = Frame(self.seq, all_angles_bitplane, True, False)
+        # make RO and add to list
+        self.rep.addRO(RunningOrder(RO_name, frame))
 
     @property
     def name(self):
@@ -316,6 +368,12 @@ class SIMRepertoire(object):
         Write the internal repertoire to a repz11 file
         """
         self.rep.write_repz11(path)
+
+    def make_sim_frame_list(self, phase_list):
+        return ((self.seq, phase_bp, looped, True)
+                for series in tuplify(phase_list)
+                for phase_bp in series
+                for looped in (False, True))
 
 
 def gen_name(angle, wl, na, n):
