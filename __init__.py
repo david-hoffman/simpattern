@@ -250,7 +250,7 @@ class SIMRepertoire(object):
         self.phases = [(n / self.nphases / phase_step) * (2 * pi)
                        for n in range(self.nphases)]
         # if we're doing nonlinear, add flipped patterns
-        if max(orders) > 1:
+        if max(self.orders) > 1:
             self.phases += list(np.array(self.phases) + pi / 2)
         # make sure the proposed repertoire will fit
         if np.prod((len(self.nas), len(self.wls),
@@ -374,10 +374,10 @@ class SIMRepertoire(object):
         self.rep.write_repz11(path)
 
     def make_sim_frame_list(self, phase_list):
-        return ((self.seq, phase_bp, looped, True)
+        return [(self.seq, phase_bp, looped, True)
                 for series in tuplify(phase_list)
-                for phase_bp in series
-                for looped in (False, True))
+                for phase_bp in tuplify(series)
+                for looped in (False, True)]
 
 
 def gen_name(angle, wl, na, n):

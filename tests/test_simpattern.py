@@ -4,6 +4,7 @@ import numpy as np
 import unittest
 
 from simpattern import *
+from simpattern.slm import *
 
 
 def test_localize():
@@ -91,3 +92,74 @@ def test_pattern_period():
         assert np.isclose(period, param['period'], 1e-1), (
             "{} != {}".format(period, param['period'])
         )
+
+
+class TestSIMRepertoire(unittest.TestCase):
+    """
+    A class to test the SIMRepertoire class and internal functions.
+    """
+
+    def setUp(self):
+        """
+        Set up an internal rep.
+        """
+        self.seq = Sequence("dummypath")
+        self.simrep = SIMRepertoire("dummyrep", 488, 0.85, 2, 3, self.seq)
+
+    def check_tuples(self):
+        """
+        Make sure entered values that should be tuples are
+        """
+        assert_equal(self.simrep.wls, (488,))
+        assert_equal(self.simrep.nas, (0.85,))
+        assert_equal(self.simrep.orders, (2,))
+
+    def test_make_sim_frame_list_single(self):
+        """
+        Make sure make_sim_frame_list works with single entries
+        """
+        simrep = self.simrep
+        output = simrep.make_sim_frame_list(0)
+        output_true = [
+            (self.seq, 0, False, True),
+            (self.seq, 0, True, True)
+        ]
+        assert_equal(output, output_true)
+
+    def test_make_sim_frame_list_multiple(self):
+        """
+        Make sure make_sim_frame_list works with multiple entries
+        """
+        simrep = self.simrep
+        phase_list = (0, 1, 2)
+        output = simrep.make_sim_frame_list(phase_list)
+        output_true = [
+            (self.seq, 0, False, True),
+            (self.seq, 0, True, True),
+            (self.seq, 1, False, True),
+            (self.seq, 1, True, True),
+            (self.seq, 2, False, True),
+            (self.seq, 2, True, True)
+        ]
+        assert_equal(output, output_true)
+
+    def test_make_sim_frame_list_zip(self):
+        """
+        Make sure make_sim_frame_list works with zipped entries
+        Implicitly shows it works with generators as expected.
+        """
+        simrep = self.simrep
+        phase_list1 = ((0, 0), (0, 1))
+        phase_list2 = ((1, 0), (1, 1))
+        output = simrep.make_sim_frame_list(zip(phase_list1, phase_list2))
+        output_true = [
+            (self.seq, (0, 0), False, True),
+            (self.seq, (0, 0), True, True),
+            (self.seq, (1, 0), False, True),
+            (self.seq, (1, 0), True, True),
+            (self.seq, (0, 1), False, True),
+            (self.seq, (0, 1), True, True),
+            (self.seq, (1, 1), False, True),
+            (self.seq, (1, 1), True, True)
+        ]
+        assert_equal(output, output_true)
