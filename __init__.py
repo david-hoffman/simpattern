@@ -305,8 +305,6 @@ class SIMRepertoire(object):
         for order in self.orders:
             num_phases = order * 2 + 1
             d = self.nphases // num_phases
-            print(num_phases)
-            print(d)
             if order == 1:
                 # linear SIM case
                 frames = [Frame(self.seq, phase_bp, looped, True)
@@ -338,6 +336,12 @@ class SIMRepertoire(object):
         RO_super_name = name_str.format(self.nphases, "Super")
         RO_super = RunningOrder(RO_super_name, super_frames)
         self.rep.addRO(RO_super)
+        # make single orientations
+        for angle, phase_list in zip(self.angles, angle_list):
+            RO_name = name_str.format(
+                1, "{:.1f} angle".format(np.rad2deg(angle)))
+            self.rep.addRO(RunningOrder(
+                RO_name, Frame(self.seq, phase_list[0], True, False)))
 
     def gen_all_angles(self, wl, na, angle_list):
         """
