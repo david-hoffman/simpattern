@@ -1,6 +1,7 @@
 
 import numpy as np
 from numpy.linalg import norm
+from scipy.optimize import minimize
 import numexpr as ne
 try:
     from pyfftw.interfaces.numpy_fft import (ifftshift, fftshift,
@@ -12,7 +13,7 @@ except ImportError:
     from numpy.fft import ifftshift, fftshift, rfftn, irfftn
 from skimage.draw import circle
 from dphutils import slice_maker
-
+from .slm import RunningOrder, BitPlane, Repertoire, Sequence
 # define pi for later use
 pi = np.pi
 
@@ -148,3 +149,180 @@ def pattern_params(my_pat, size=2):
             "fft": my_pat_fft,
             "mod": mod,
             "max_loc": max_loc}
+
+
+def opt_period(iperiod, angle, **kwargs):
+    """
+    Optimize actual period
+    """
+    def objf_l1(period):
+        calc_period = pattern_params(angle, period, **kwargs)['period']
+        return abs(calc_period - iperiod)
+    return minimize(objf_l1, iperiod, method='Nelder-Mead')['x']
+
+
+def opt_angle(period, iangle, **kwargs):
+    """
+    Optimize angle
+    """
+    def objf_l1(angle):
+        calc_angle = pattern_params(angle, period, **kwargs)['angle']
+        return abs(calc_angle - iangle)
+    return minimize(objf_l1, iperiod, method='Nelder-Mead')['x']
+
+
+def make_angles(init_angle, num_angles):
+    """
+    Make a list of angles
+    """
+    thetas = np.arange(0., num_angles) * pi / 1. / num_angles + init_angle
+    return thetas
+
+
+def ideal_period(wavelength, na=0.85):
+    '''
+    Wavelength is in nm
+    '''
+    # all other units in mm
+    # pixel size in mm for QXGA display (4DD)
+    pixel_size = 8.2 / 1000
+    # focal length of lens in mm
+    fl = 250
+    # focal length of the second lens
+    fl2 = 300
+    # focal length of the tube lens, for Nikon this is 200 mm
+    ftube = 200
+    # focal length of objective
+    fobj = 2
+    # wavelength of light
+    wl = wavelength / 10**6
+    mag = fobj / ftube
+    # std dev of gaussian beam in units of pixels at the SLM
+    # sigma = np.sqrt(2) * 12 / pixel_size / 4
+    # Size of pupil image at first fourier plane
+    pupil_diameter = 2 * na * mag * fl2
+    # this is the limit of hole size
+    # hole_radius = 2 * wl * fl / (2 * pi * sigma * np.sqrt(2) * pixel_size)
+    # hole_radius = 0.1/2# this is more reasonable (50 um)
+    # period = wl * fl * (1/(pupil_diameter/2 - hole_radius))/ pixel_size
+    period = wl * fl / (pupil_diameter / 2) / pixel_size
+    return period
+
+
+def tuplify(arg):
+    """
+    A utility function to convert args to tuples
+    """
+    # strings need special handling
+    if isinstance(arg, str):
+        return (arg, )
+    # other wise try and make it a tuple
+    try:
+        # turn passed arg to list
+        return tuple(arg)
+    except TypeError:
+        # if not iterable, then make list
+        return (arg, )
+
+
+class SIMRepertoire(object):
+    """
+    A class that takes care of the actual generation of images
+
+    This is _not_ a subclass of slm.Repertoire, but does hold an instance
+    """
+
+    blank = BitPlane(np.zeros((1536, 2048)), "Blank")
+
+    def __init__(self, name, wls, nas, orders, norientations, seq):
+        """
+        Parameters
+        ----------
+        name : string
+            name of the repertoire
+        wls : numeric or tuple
+            wavelengths to generate patterns for
+        nas : numeric or tuple
+            NAs to generate patterns for
+
+        """
+        # we have one sequence for now
+        self.seq = seq
+        # make new internal Repertoire to hold everything.
+        self.rep = Repertoire(name)
+        # what wavelengths to try
+        self.wls = tuplify(wls)
+        # what na's to try
+        self.nas = tuplify(nas)
+        # what non-linear orders to try
+        self.orders = tuplify(orders)
+        # for now hard code, we have to double the phases
+        # so we can do 90 deg phase stepping.
+        self.nphases = prod(orders) * 2
+        if prod(len(self.nas), len(self.wls),
+                norientations + 1, self.nphases) + 1 > 1024:
+            raise RuntimeError("These settings will generate too many")
+        # For the current microscope we can only have one set of orientation
+        if norientations == 3:
+            init_angle = 11.6
+        elif norientations == 5:
+            init_angle = 9.0
+        elif norientations == 7:
+            init_angle = 0.9
+        else:
+            raise RuntimeError("number of orientations not valid, ",
+                               norientations)
+        self.angles = make_angles(norientations, init_angle)
+
+        # once we have all this info we can start making bitplanes
+        self.make_bitplanes()
+
+    def make_bitplanes(self):
+        """
+        Function that returns a dictionary of dictionary of bitplanes
+        of BitPlanes
+        """
+        # first level is wl
+        self.bitplanes = {wl: {
+            na: [
+                [BitPlane(pattern(ang, ideal_period(wl, na), phase_idx=n,
+                                  nphases=self.nphases),
+                          gen_name(ang, wl, na, n))
+                 for n in range(self.nphases)] for ang in self.angles]
+            for na in self.nas
+        } for wl in self.wls}
+
+    def make_ROs(self):
+        for wl, na_dict in self.bitplanes.items():
+            for na, angle_list in na_dict.items():
+                self.gen_fast_sims(wl, na, angle_list)
+                self.gen_super_sims(wl, na, angle_list)
+                self.gen_all_angles(wl, na, angle_list)
+
+    def gen_all_angles(self, wl, na, angle_list):
+        data_array = np.array([
+            ang[0].image for ang in angle_list
+        ])
+        bitplane = data_array.mean(0) > 0.5
+        name = "AllAngles-{}nm-{:.2f}NA".format(wl, na)
+        all_angles_bitplane = BitPlane(bitplane, name)
+
+    @property
+    def name(self):
+        return self.rep.name
+
+    def write(self, path=""):
+        """
+        Write the internal repertoire to a repz11 file
+        """
+        self.rep.write_repz11(path)
+
+
+def gen_name(angle, wl, na, n):
+    """
+    Generate a unique name for a BitPlane
+    """
+    degree = np.rad2deg(angle)
+    my_per = ideal_period(wl, na)
+    name = 'pat-{}nm-{:.2f}NA{:+.1f}deg-{:02d}ph-{:.4f}pix-{:.2f}DC'
+    return name.format(wl, na, degree, n, my_per, 0.5)

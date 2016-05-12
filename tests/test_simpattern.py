@@ -6,6 +6,71 @@ import unittest
 from simpattern import *
 
 
+def test_tuplify_int():
+    """
+    Testing that tuplify works, ints
+    """
+    obj = tuplify(1)
+    assert_is_instance(obj, tuple)
+
+
+def test_tuplify_float():
+    """
+    Testing that tuplify works, floats
+    """
+    obj = tuplify(0.1)
+    assert_is_instance(obj, tuple)
+
+
+def test_tuplify_bool():
+    """
+    Testing that tuplify works, bools
+    """
+    obj = tuplify(True)
+    assert_is_instance(obj, tuple)
+
+
+def test_tuplify_str():
+    """
+    Testing that tuplify works, strings
+    """
+    obj = tuplify("str")
+    assert_is_instance(obj, tuple)
+    assert_equal(1, len(obj))
+
+
+def test_tuplify_list():
+    """
+    Testing that tuplify works, lists
+    """
+    obj = tuplify([1, 2, 3])
+    assert_is_instance(obj, tuple)
+
+
+def test_localize():
+    """
+    test localize, make sure it finds peak in right place.
+    """
+    pat = np.zeros((3, 3))
+    pat[1, 1] = 1
+    y0, x0 = localize_peak(pat)
+    assert_almost_equals(0, y0, x0)
+
+
+def test_localize2():
+    """
+    test localize, more complicated
+    """
+    x = np.arange(-1, 2)
+    xr = -0.2
+    yr = 0.6
+    # make fake peak that is dot of two parabolas
+    pat = (-(x - yr)**2).reshape(-1, 1) * (-(x - xr)**2)
+    y0, x0 = localize_peak(pat)
+    assert_almost_equal(yr, y0)
+    assert_almost_equal(xr, x0)
+
+
 def test_pattern_return_bool():
     """
     test return type
