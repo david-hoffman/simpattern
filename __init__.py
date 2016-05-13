@@ -231,7 +231,7 @@ class SIMRepertoire(object):
         'Pixel size (um) = "0.0975, 0.0975"',
         'Filter Wheel 1 = "Filter 0"',
         'Filter Wheel 2 = "Filter 0"',
-        'File Index = "0,-1\0D\0A"',
+        r'File Index = "0,-1\0D\0A"',
         'Setpoints:Galvo = "0,10,0,0,0"',
         ('Setpoints:Step 1 = "Laser[{wl:d} nm]; LC [0,1,2,3,4];'
          ' Delay [0]; Camera[0]; Imaging[TRUE];'
@@ -247,7 +247,7 @@ class SIMRepertoire(object):
         'Pixel size (um) = "0.0975, 0.0975"',
         'Filter Wheel 1 = "Filter 0"',
         'Filter Wheel 2 = "Filter 0"',
-        'File Index = "0,-1\0D\0A1,-1\0D\0A2,-1\0D\0A"',
+        r'File Index = "0,-1\0D\0A1,-1\0D\0A2,-1\0D\0A"',
         'Setpoints:Galvo = "0,10,0,0,0"',
         ('Setpoints:Step 1 = "Laser[405 nm]; LC [5,5,5,5,5];'
          ' Delay [100]; Camera[0]; Imaging[FALSE];'
@@ -394,7 +394,7 @@ class SIMRepertoire(object):
                 RO_name = name_str.format(num_phases, "Non-Linear")
             RO = RunningOrder(RO_name, frames)
             # tag the RO for writing the INI file later
-            if orders == 1:
+            if order == 1:
                 RO.linear = True
             else:
                 RO.linear = False
@@ -463,18 +463,22 @@ class SIMRepertoire(object):
         # open file
         with open(filename, "w") as file:
             for i, RO in enumerate(rep):
-                if RO.linear:
-                    str2write = self.linear_str
-                else:
-                    str2write = self.nonlinear_str
-                file.write(str2write.format(
-                    wl=RO.wl,
-                    aotf_str=format_aotf_str(RO.wl),
-                    nphases=RO.nphases,
-                    ROname=RO.name,
-                    RO_num=i
-                ))
-                file.write("\n")
+                try:
+                    if RO.linear:
+                        str2write = self.linear_str
+                    else:
+                        str2write = self.nonlinear_str
+                    # now format
+                    file.write(str2write.format(
+                        wl=RO.wl,
+                        aotf_str=format_aotf_str(RO.wl),
+                        nphases=RO.nphases,
+                        ROname=RO.name,
+                        RO_num=i
+                    ))
+                    file.write("\n\n")
+                except AttributeError:
+                    pass
 
     def make_sim_frame_list(self, series):
         """
