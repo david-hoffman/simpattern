@@ -229,9 +229,6 @@ class Repertoire(object):
                 # write the buffer to the zipfile
                 zf.writestr(bp.name + ".bmp", output.getvalue())
 
-    def write_ini(self):
-        raise NotImplementedError
-
 
 class RunningOrder(object):
     """

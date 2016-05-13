@@ -22,7 +22,7 @@ try:
 except ImportError:
     from numpy.fft import ifftshift, fftshift, rfftn, irfftn
 from dphutils import slice_maker
-from .slm import *
+from .slm import Repertoire, RunningOrder, Frame, BitPlane, tuplify
 # define pi for later use
 pi = np.pi
 
@@ -222,7 +222,8 @@ class SIMRepertoire(object):
             wavelengths to generate patterns for
         nas : numeric or tuple
             NAs to generate patterns for
-
+        norientations : int
+            number of pattern orientations
         """
         # we have one sequence for now
         self.seq = seq
@@ -289,6 +290,10 @@ class SIMRepertoire(object):
         } for wl in self.wls}
 
     def make_ROs(self):
+        """
+        Sub-method that makes the running orders and adds them to the
+        Repertoire.
+        """
         for wl, na_dict in self.bitplanes.items():
             for na, angle_list in na_dict.items():
                 self.gen_sims(wl, na, angle_list)
@@ -298,26 +303,35 @@ class SIMRepertoire(object):
         """
         Do linear and nonlinear SIMs here
         """
+        # define the naming convention for ROs
         name_str = ("{} nm ".format(wl) +
                     "{} phases " +
                     "{:.2f} NA ".format(na) +
                     "{} SIM")
+        # loop through the orders
         for order in self.orders:
+            # calculate the number of phases
+            # NOTE: this is hardcoded for 2D-SIM
             num_phases = order * 2 + 1
-            d = self.nphases // num_phases
+            # Calculate the offset of bitplanes
+            delta = self.nphases // num_phases
             if order == 1:
                 # linear SIM case
+                # frames = make_sim_frame_list([
+                #       phase_list[:self.nphases:delta]
+                #       for phase_list in angle_list
+                #   ])
                 frames = [Frame(self.seq, phase_bp, looped, True)
                           for phase_list in angle_list
-                          for phase_bp in phase_list[:self.nphases:d]
+                          for phase_bp in phase_list[:self.nphases:delta]
                           for looped in (False, True)]
                 RO_name = name_str.format(num_phases, "Linear")
             else:
                 # non-linear SIM case
                 frames = []
                 for phase_list in angle_list:
-                    off_phases = phase_list[self.nphases::d]
-                    on_phases = phase_list[:self.nphases:d]
+                    off_phases = phase_list[self.nphases::delta]
+                    on_phases = phase_list[:self.nphases:delta]
                     assert len(off_phases) == len(on_phases)
                     reactivation = [self.blank_bitplane] * len(off_phases)
                     frames.extend([Frame(self.seq, phase_bp, looped, True)
@@ -373,10 +387,21 @@ class SIMRepertoire(object):
         """
         self.rep.write_repz11(path)
 
-    def make_sim_frame_list(self, phase_list):
+    def write_ini(self):
+        """
+        Method to write the INI file for LabVIEW
+        """
+        raise NotImplementedError
+
+    def make_sim_frame_list(self, series):
+        """
+        Utility function that interleaves a list of bitplanes
+        such that there's one single triggered version followed
+        by a looped version that has a triggered ending.
+        """ 
         return [(self.seq, phase_bp, looped, True)
-                for series in tuplify(phase_list)
-                for phase_bp in tuplify(series)
+                for phase_list in tuplify(series)
+                for phase_bp in tuplify(phase_list)
                 for looped in (False, True)]
 
 
