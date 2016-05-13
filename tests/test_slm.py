@@ -15,6 +15,16 @@ import unittest
 
 from simpattern.slm import *
 
+# some globals
+path_to_seq1 = os.path.join(os.path.dirname(__file__),
+                            "..", "HHMI_R11_Seq",
+                            "48070 HHMI 10ms.seq11")
+path_to_seq2 = os.path.join(os.path.dirname(__file__),
+                            "..", "HHMI_R11_Seq",
+                            "48071 HHMI 50ms.seq11")
+assert os.path.exists(path_to_seq1), os.path.abspath(path_to_seq1)
+assert os.path.exists(path_to_seq2), os.path.abspath(path_to_seq2)
+
 
 def test_tuplify_int():
     """
@@ -102,22 +112,23 @@ class TestSequence(unittest.TestCase):
     """
     Testing functionality of Sequence class
     """
+    def setUp(self):
+        self.path_to_seq1 = path_to_seq1
+        self.path_to_seq2 = path_to_seq2
 
     def test_hash(self):
         """
         Make sure Sequences's are hashable
         """
-        seq = Sequence("path")
+        seq = Sequence(self.path_to_seq2)
         hash(seq)
 
     def test_name(self):
         """
         Make sure sequence name is determined correctly
         """
-        seq1 = Sequence("path")
-        assert_equal(seq1.name, "path")
-        seq2 = Sequence(os.path.join("junk", "junk2", "seq.sq"))
-        assert_equal(seq2.name, "seq.sq")
+        seq1 = Sequence(self.path_to_seq1)
+        assert_equal(seq1.name, os.path.split(path_to_seq1)[1])
 
 
 class TestFrame(unittest.TestCase):
@@ -128,10 +139,14 @@ class TestFrame(unittest.TestCase):
         """
         Set up some dummy sequences and bitplanes
         """
-        self.seq1_path = "path1"
-        self.seq2_path = "path2"
-        self.seq1 = Sequence(self.seq1_path)
-        self.seq2 = Sequence(self.seq2_path)
+        # load paths
+        self.path_to_seq1 = path_to_seq1
+        self.path_to_seq2 = path_to_seq2
+        # make sure they're valid
+        assert_true(os.path.exists(self.path_to_seq1))
+        assert_true(os.path.exists(self.path_to_seq2))
+        self.seq1 = Sequence(self.path_to_seq1)
+        self.seq2 = Sequence(self.path_to_seq2)
         self.data1 = np.random.randint(2, size=(512, 512))
         self.data2 = np.random.randint(2, size=(512, 512))
         self.bp1 = BitPlane(self.data1)
@@ -152,10 +167,10 @@ class TestRepertoire(unittest.TestCase):
         """
         Set up some dummy sequences and bitplanes
         """
-        self.seq1_path = "path1"
-        self.seq2_path = "path2"
-        self.seq1 = Sequence(self.seq1_path)
-        self.seq2 = Sequence(self.seq2_path)
+        self.path_to_seq1 = path_to_seq1
+        self.path_to_seq2 = path_to_seq2
+        self.seq1 = Sequence(self.path_to_seq1)
+        self.seq2 = Sequence(self.path_to_seq2)
         self.data1 = np.random.randint(2, size=(512, 512))
         self.data2 = np.random.randint(2, size=(512, 512))
         self.bp1 = BitPlane(self.data1)
@@ -178,7 +193,9 @@ class TestRepertoire(unittest.TestCase):
         """
         Testing that adding a new RO updates internals right
         """
-        seq3_path = "path3"
+        seq3_path = os.path.join(os.path.dirname(__file__),
+                                 "..", "HHMI_R11_Seq",
+                                 "48075 HHMI 5ms.seq11")
         seq3 = Sequence(seq3_path)
         data3 = np.random.randint(2, size=(512, 512))
         bp3 = BitPlane(data3)
@@ -250,7 +267,7 @@ class TestRepertoire(unittest.TestCase):
         frame = Frame((self.seq1, self.seq1), (self.bp1, self.bp1), True, True)
         RO = RunningOrder("test_write_frame", (frame, ))
         rep = Repertoire("Dummy rep", (RO,))
-        test_str = 'SEQUENCES\nA "' + self.seq1_path + '"\nSEQUENCES_END\n\n'
+        test_str = 'SEQUENCES\nA "' + self.seq1.name + '"\nSEQUENCES_END\n\n'
         test_str += 'IMAGES\n1 "' + self.bp1.name + '.bmp"\nIMAGES_END\n\n'
         test_str += 'DEFAULT "test_write_frame"\n[HWA \n\n {f (A,0) (A,0) }\n]\n\n'
         assert_equals(test_str, str(rep))
@@ -275,8 +292,8 @@ class TestRepertoire2(unittest.TestCase):
         """
         Do we match the test file?
         """
-        seqA = Sequence("48070 HHMI 10ms.seq11")
-        seqB = Sequence("48071 HHMI 50ms.seq11")
+        seqA = Sequence(path_to_seq1)
+        seqB = Sequence(path_to_seq2)
         bp_names = [
             "pat-6.92003pixel-0.5DC-Ang0Ph0",
             "pat-6.92003pixel-0.5DC-Ang0Ph1",

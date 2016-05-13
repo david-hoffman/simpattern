@@ -9,6 +9,7 @@ Package holding the necessary functions for generating SIM patterns for
 the QXGA-3DM writing repz11 files and ini files for labVIEW
 """
 
+import os
 import numpy as np
 from numpy.linalg import norm
 from scipy.optimize import minimize
@@ -202,6 +203,17 @@ def ideal_period(wavelength, na=0.85):
     return period
 
 
+def format_aotf_str(wl):
+    """
+    Short utility
+    """
+    wl_dict = dict(nm488=0, nm560=0)
+    wl = "nm" + str(wl)
+    assert wl in wl_dict, "Invalid wavelength = {}".format(wl)
+    wl_dict[wl] = 100
+    fmt_str = 'AOTF[   0 405 nm(X); {nm488:3d} 488 nm(X); {nm560:3d} 560 nm(X);   0 405 nm(X)]'
+    return fmt_str.format(**wl_dict)
+
 class SIMRepertoire(object):
     """
     A class that takes care of the actual generation of images
@@ -210,6 +222,46 @@ class SIMRepertoire(object):
     """
 
     blank_bitplane = BitPlane(np.zeros((1536, 2048)), "Blank")
+
+    linear_str = "\n".join([
+        '[Sequence setpoints:{ROname}]',
+        'Running Order = {RO_num:d}',
+        'N Phases = {nphases:d}',
+        'Detection Mode = "Camera 1"',
+        'Pixel size (um) = "0.0975, 0.0975"',
+        'Filter Wheel 1 = "Filter 0"',
+        'Filter Wheel 2 = "Filter 0"',
+        'File Index = "0,-1\0D\0A"',
+        'Setpoints:Galvo = "0,10,0,0,0"',
+        ('Setpoints:Step 1 = "Laser[{wl:d} nm]; LC [0,1,2,3,4];'
+         ' Delay [0]; Camera[0]; Imaging[TRUE];'
+         ' {aotf_str};'
+         ' BeamBlock[No change]"')
+    ])
+
+    nonlinear_str = "\n".join([
+        '[Sequence setpoints:{ROname}]',
+        'Running Order = {RO_num:d}',
+        'N Phases = {nphases:d}',
+        'Detection Mode = "Camera 1"',
+        'Pixel size (um) = "0.0975, 0.0975"',
+        'Filter Wheel 1 = "Filter 0"',
+        'Filter Wheel 2 = "Filter 0"',
+        'File Index = "0,-1\0D\0A1,-1\0D\0A2,-1\0D\0A"',
+        'Setpoints:Galvo = "0,10,0,0,0"',
+        ('Setpoints:Step 1 = "Laser[405 nm]; LC [5,5,5,5,5];'
+         ' Delay [100]; Camera[0]; Imaging[FALSE];'
+         ' AOTF[   0 405 nm(X);   0 488 nm(X);   0 560 nm(X);   0 405 nm(X)];'
+         ' BeamBlock[Out]"'),
+        ('Setpoints:Step 2 = "Laser[{wl:d} nm]; LC [0,1,2,3,4];'
+         ' Delay [100]; Camera[0]; Imaging[FALSE];'
+         ' {aotf_str};'
+         ' BeamBlock[In]"'),
+        ('Setpoints:Step 3 = "Laser[{wl:d} nm]; LC [0,1,2,3,4];'
+         ' Delay [0]; Camera[0]; Imaging[TRUE];'
+         ' {aotf_str};'
+         ' BeamBlock[In]"')
+    ])
 
     def __init__(self, name, wls, nas, orders, norientations, seq,
                  SIM_2D=True):
@@ -341,6 +393,14 @@ class SIMRepertoire(object):
                                    for looped in (False, True)])
                 RO_name = name_str.format(num_phases, "Non-Linear")
             RO = RunningOrder(RO_name, frames)
+            # tag the RO for writing the INI file later
+            if orders == 1:
+                RO.linear = True
+            else:
+                RO.linear = False
+            RO.nphases = num_phases
+            RO.wl = wl
+            # add the RO to the rep
             self.rep.addRO(RO)
         # make the super sim here
         super_frames = [Frame(self.seq, phase_bp, looped, True)
@@ -349,6 +409,11 @@ class SIMRepertoire(object):
                         for looped in (False, True)]
         RO_super_name = name_str.format(self.nphases, "Super")
         RO_super = RunningOrder(RO_super_name, super_frames)
+        # tag RO for ini
+        RO_super.nphases = self.nphases
+        # Its not that this RO is linear, but it doesn't need the extra steps.
+        RO_super.linear = True
+        RO_super.wl = wl
         self.rep.addRO(RO_super)
         # make single orientations
         for angle, phase_list in zip(self.angles, angle_list):
@@ -386,19 +451,37 @@ class SIMRepertoire(object):
         Write the internal repertoire to a repz11 file
         """
         self.rep.write_repz11(path)
+        self.write_ini(path)
 
-    def write_ini(self):
+    def write_ini(self, path):
         """
         Method to write the INI file for LabVIEW
         """
-        raise NotImplementedError
+        # pull rep out for ease of use
+        rep = self.rep
+        filename = os.path.join(path, rep.name + ".ini")
+        # open file
+        with open(filename, "w") as file:
+            for i, RO in enumerate(rep):
+                if RO.linear:
+                    str2write = self.linear_str
+                else:
+                    str2write = self.nonlinear_str
+                file.write(str2write.format(
+                    wl=RO.wl,
+                    aotf_str=format_aotf_str(RO.wl),
+                    nphases=RO.nphases,
+                    ROname=RO.name,
+                    RO_num=i
+                ))
+                file.write("\n")
 
     def make_sim_frame_list(self, series):
         """
         Utility function that interleaves a list of bitplanes
         such that there's one single triggered version followed
         by a looped version that has a triggered ending.
-        """ 
+        """
         return [(self.seq, phase_bp, looped, True)
                 for phase_list in tuplify(series)
                 for phase_bp in tuplify(phase_list)

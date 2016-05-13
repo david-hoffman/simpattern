@@ -94,6 +94,14 @@ def test_pattern_period():
         )
 
 
+def test_format_aotf_str():
+    """
+    Make sure the output is correct
+    """
+    corr_output = 'AOTF[   0 405 nm(X); 100 488 nm(X);   0 560 nm(X);   0 405 nm(X)]'
+    output = format_aotf_str(488)
+    assert_equal(corr_output, output)
+
 class TestSIMRepertoire(unittest.TestCase):
     """
     A class to test the SIMRepertoire class and internal functions.
@@ -103,7 +111,9 @@ class TestSIMRepertoire(unittest.TestCase):
         """
         Set up an internal rep.
         """
-        self.seq = Sequence("dummypath")
+        self.seq = Sequence(os.path.join(os.path.dirname(__file__),
+                                         "..", "HHMI_R11_Seq",
+                                         "48070 HHMI 10ms.seq11"))
         self.simrep = SIMRepertoire("dummyrep", 488, 0.85, 2, 3, self.seq)
 
     def check_tuples(self):
