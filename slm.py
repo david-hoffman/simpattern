@@ -10,7 +10,6 @@ the QXGA-3DM writing repz11 files and ini files for labVIEW
 """
 
 import os
-import collections
 import zipfile
 import hashlib
 import numpy as np
@@ -296,6 +295,8 @@ class Sequence(object):
         """
         Initialize with path to sequence file.
         """
+        assert os.path.exists(path), "There is no file at " + path
+        assert "seq" in os.path.splitext(path)[1]
         self.path = path
 
     @property
