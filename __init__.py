@@ -23,9 +23,21 @@ try:
 except ImportError:
     from numpy.fft import ifftshift, fftshift, rfftn, irfftn
 from dphutils import slice_maker
-from .slm import Repertoire, RunningOrder, Frame, BitPlane, tuplify
+from .slm import (Sequence, Repertoire, RunningOrder, Frame,
+                  BitPlane, tuplify)
 # define pi for later use
 pi = np.pi
+
+# define local sequences, for easy acces
+seq_home = os.path.join(os.path.dirname(__file__), "HHMI_R11_Seq", "")
+seq_10ms = Sequence(seq_home + "48070 HHMI 10ms.seq11")
+seq_50ms = Sequence(seq_home + "48071 HHMI 50ms.seq11")
+seq_5ms = Sequence(seq_home + "48075 HHMI 5ms.seq11")
+seq_20ms = Sequence(seq_home + "48076 HHMI 20ms.seq11")
+seq_24_50ms = Sequence(seq_home + "48077 HHMI 24 50ms.seq11")
+seq_24_1ms = Sequence(seq_home + "48078 HHMI 24 1ms.seq11")
+seq_1ms_LB = Sequence(seq_home + "48083 HHMI 1ms 1-bit Lit Balanced.seq11")
+seq_2ms_LB = Sequence(seq_home + "48084 HHMI 2ms 1-bit Lit Balanced.seq11")
 
 
 # newest one
@@ -207,12 +219,13 @@ def format_aotf_str(wl):
     """
     Short utility
     """
-    wl_dict = dict(nm488=0, nm560=0)
+    wl_dict = dict(nm488=0, nm532=0, nm560=0)
     wl = "nm" + str(wl)
     assert wl in wl_dict, "Invalid wavelength = {}".format(wl)
     wl_dict[wl] = 100
-    fmt_str = 'AOTF[   0 405 nm(X); {nm488:3d} 488 nm(X); {nm560:3d} 560 nm(X);   0 405 nm(X)]'
+    fmt_str = 'AOTF[ {nm488:3d} 488 nm(X);  {nm532:3d} 532 nm(X); {nm560:3d} 560 nm(X);   0 405 nm(X)]'
     return fmt_str.format(**wl_dict)
+
 
 class SIMRepertoire(object):
     """
@@ -322,6 +335,10 @@ class SIMRepertoire(object):
         self.angles = make_angles(init_angle, norientations)
         # once we have all this info we can start making bitplanes
         self.make_bitplanes()
+        # add a blank bit plane
+        self.rep.addRO(RunningOrder(
+            "Blank", Frame(self.seq, self.blank_bitplane, True, False)
+        ))
 
     def clear_rep(self):
         # make new internal Repertoire to hold everything.
