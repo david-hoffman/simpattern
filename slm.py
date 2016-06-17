@@ -295,7 +295,7 @@ class Sequence(object):
         """
         Initialize with path to sequence file.
         """
-        assert os.path.exists(path), "There is no file at " + path
+        assert os.path.exists(path), "There is no file at " + os.path.abspath(path)
         assert "seq" in os.path.splitext(path)[1]
         self.path = path
 
