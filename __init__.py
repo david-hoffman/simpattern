@@ -277,7 +277,7 @@ class SIMRepertoire(object):
     ])
 
     def __init__(self, name, wls, nas, orders, norientations, seq,
-                 SIM_2D=True):
+                 SIM_2D=True, super_repeats=1):
         """
         Parameters
         ----------
@@ -302,6 +302,7 @@ class SIMRepertoire(object):
         self.orders = tuplify(orders)
         if min(self.orders) < 1:
             raise RuntimeError("Orders less than 0")
+        self.repeats = super_repeats
         # for now hard code, we have to double the phases
         # so we can do 90 deg phase stepping.
         if SIM_2D:
@@ -420,14 +421,16 @@ class SIMRepertoire(object):
             # add the RO to the rep
             self.rep.addRO(RO)
         # make the super sim here
-        super_frames = [Frame(self.seq, phase_bp, looped, True)
-                        for phase_list in angle_list
-                        for phase_bp in phase_list[:self.nphases]
-                        for looped in (False, True)]
-        RO_super_name = name_str.format(self.nphases, "Super")
+        super_frames = [
+            Frame(self.seq, phase_bp, looped, True)
+            for phase_list in angle_list
+            for phase_bp in phase_list[:self.nphases] * self.repeats
+            for looped in (False, True)
+        ]
+        RO_super_name = name_str.format(self.nphases * self.repeats, "Super")
         RO_super = RunningOrder(RO_super_name, super_frames)
         # tag RO for ini
-        RO_super.nphases = self.nphases
+        RO_super.nphases = self.nphases * self.repeats
         # Its not that this RO is linear, but it doesn't need the extra steps.
         RO_super.linear = True
         RO_super.wl = wl
