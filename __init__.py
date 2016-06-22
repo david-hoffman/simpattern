@@ -320,9 +320,17 @@ class SIMRepertoire(object):
         if max(self.orders) > 1:
             self.phases += list(np.array(self.phases) + pi / 2)
         # make sure the proposed repertoire will fit
-        if np.prod((len(self.nas), len(self.wls),
-                    norientations + 1, len(self.phases))) + 1 > 1024:
-            raise RuntimeError("These settings will generate too many")
+        # TODO: the below is not correct ...
+        num_bitplanes = np.prod((
+            len(self.nas), len(self.wls), norientations + 1, len(self.phases)
+        )) + 1
+        if num_bitplanes > 1024:
+            raise RuntimeError(
+                ("These settings will generate {}",
+                 "bitplanes which is more than 1024").format(num_bitplanes)
+            )
+        else:
+            print("Generating {} bitplanes".format(num_bitplanes))
         # For the current microscope we can only have one set of orientation
         if norientations == 3:
             init_angle = np.deg2rad(11.6)
