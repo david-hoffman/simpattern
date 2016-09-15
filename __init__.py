@@ -217,7 +217,7 @@ def ideal_period(wavelength, na=0.85):
 
 def format_aotf_str(wl):
     """
-    Short utility
+    Short utility to format the text needed for the INI file
     """
     wl_dict = dict(nm488=0, nm532=0, nm560=0)
     wl = "nm" + str(wl)
@@ -428,22 +428,49 @@ class SIMRepertoire(object):
             RO.wl = wl
             # add the RO to the rep
             self.rep.addRO(RO)
-        # make the super sim here
-        super_frames = [
+        ##################################################################
+        # make the super linear sim here
+        ##################################################################
+        super_frames_linear = [
             Frame(self.seq, phase_bp, looped, True)
             for phase_list in angle_list
             for phase_bp in phase_list[:self.nphases] * self.repeats
             for looped in (False, True)
         ]
-        RO_super_name = name_str.format(self.nphases * self.repeats, "Super")
-        RO_super = RunningOrder(RO_super_name, super_frames)
+        RO_super_linear_name = name_str.format(self.nphases * self.repeats, "Super Linear")
+        RO_super_linear = RunningOrder(RO_super_linear_name, super_frames_linear)
         # tag RO for ini
-        RO_super.nphases = self.nphases * self.repeats
+        RO_super_linear.nphases = self.nphases * self.repeats
         # Its not that this RO is linear, but it doesn't need the extra steps.
-        RO_super.linear = True
-        RO_super.wl = wl
-        self.rep.addRO(RO_super)
+        RO_super_linear.linear = True
+        RO_super_linear.wl = wl
+        self.rep.addRO(RO_super_linear)
+        ##################################################################
+        # make the super NL sim here
+        ##################################################################
+        super_frames_nonlinear = []
+        for phase_list in angle_list:
+            off_phases = phase_list[self.nphases] * self.repeats
+            on_phases = phase_list[:self.nphases] * self.repeats
+            assert len(off_phases) == len(on_phases)
+            reactivation = [self.blank_bitplane] * len(off_phases)
+            super_frames_nonlinear.extend([Frame(self.seq, phase_bp, looped, True)
+                           for series in zip(reactivation, off_phases,
+                                             on_phases)
+                           for phase_bp in series
+                           for looped in (False, True)])
+        RO_name = name_str.format(num_phases, "Non-Linear")
+        RO_super_nonlinear_name = name_str.format(self.nphases * self.repeats, "Super Non-Linear")
+        RO_super_nonlinear = RunningOrder(RO_super_nonlinear_name, super_frames_nonlinear)
+        # tag RO for ini
+        RO_super_nonlinear.nphases = self.nphases * self.repeats
+        # Its not that this RO is linear, but it doesn't need the extra steps.
+        RO_super_nonlinear.linear = False
+        RO_super_nonlinear.wl = wl
+        self.rep.addRO(RO_super_nonlinear)
+        ###################################################################
         # make single orientations
+        ###################################################################
         for angle, phase_list in zip(self.angles, angle_list):
             RO_name = name_str.format(
                 1, "{:.1f} angle".format(np.rad2deg(angle)))
