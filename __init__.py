@@ -241,7 +241,7 @@ class SIMRepertoire(object):
         'Running Order = {RO_num:d}',
         'N Phases = {nphases:d}',
         'Detection Mode = "Camera 1"',
-        'Pixel size (um) = "0.0975, 0.0975"',
+        'Pixel size (um) = "0.13, 0.13"',
         'Filter Wheel 1 = "Filter 0"',
         'Filter Wheel 2 = "Filter 0"',
         r'File Index = "0,-1\0D\0A"',
@@ -257,7 +257,7 @@ class SIMRepertoire(object):
         'Running Order = {RO_num:d}',
         'N Phases = {nphases:d}',
         'Detection Mode = "Camera 1"',
-        'Pixel size (um) = "0.0975, 0.0975"',
+        'Pixel size (um) = "0.13, 0.13"',
         'Filter Wheel 1 = "Filter 0"',
         'Filter Wheel 2 = "Filter 0"',
         r'File Index = "0,-1\0D\0A1,-1\0D\0A2,-1\0D\0A"',
@@ -320,10 +320,15 @@ class SIMRepertoire(object):
         if max(self.orders) > 1:
             self.phases += list(np.array(self.phases) + pi / 2)
         # make sure the proposed repertoire will fit
-        # TODO: the below is not correct ...
-        num_bitplanes = np.prod((
-            len(self.nas), len(self.wls), norientations + 1, len(self.phases)
-        )) + 1
+        num_bitplanes = len(self.nas)
+        num_bitplanes *= len(self.wls)
+        num_bitplanes *= norientations
+        num_bitplanes *= len(self.phases)
+        if max(self.orders) > 1:
+            # for non-linear phase switching
+            num_bitplanes *= 2
+        # for the all angles and blank patterns.
+        num_bitplanes += len(self.wls) + 1
         if num_bitplanes > 1024:
             raise RuntimeError(
                 ("These settings will generate {}",
@@ -507,6 +512,11 @@ class SIMRepertoire(object):
                 for phase_list in tuplify(series)
                 for phase_bp in tuplify(phase_list)
                 for looped in (False, True)]
+
+    def __call__(self, path=""):
+        """Do everything an write it out"""
+        self.make_ROs()
+        self.write(path)
 
 
 def gen_name(angle, wl, na, n):
