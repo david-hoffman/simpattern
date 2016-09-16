@@ -390,84 +390,46 @@ class SIMRepertoire(object):
         for order in self.orders:
             # calculate the number of phases
             # NOTE: this is hardcoded for 2D-SIM
-            num_phases = order * 2 + 1
+            np_linear = order * 2 + 1
             # Calculate the offset of bitplanes
-            delta = self.nphases // num_phases
-            if order == 1:
-                # linear SIM case
-                # frames = make_sim_frame_list([
-                #       phase_list[:self.nphases:delta]
-                #       for phase_list in angle_list
-                #   ])
-                frames = [Frame(self.seq, phase_bp, looped, True)
-                          for phase_list in angle_list
-                          for phase_bp in phase_list[:self.nphases:delta]
-                          for looped in (False, True)]
-                RO_name = name_str.format(num_phases, "Linear")
-            else:
-                # non-linear SIM case
-                frames = []
-                for phase_list in angle_list:
-                    off_phases = phase_list[self.nphases::delta]
-                    on_phases = phase_list[:self.nphases:delta]
-                    assert len(off_phases) == len(on_phases)
-                    reactivation = [self.blank_bitplane] * len(off_phases)
-                    frames.extend([Frame(self.seq, phase_bp, looped, True)
-                                   for series in zip(reactivation, off_phases,
-                                                     on_phases)
-                                   for phase_bp in series
-                                   for looped in (False, True)])
-                RO_name = name_str.format(num_phases, "Non-Linear")
-            RO = RunningOrder(RO_name, frames)
-            # tag the RO for writing the INI file later
-            if order == 1:
-                RO.linear = True
-            else:
-                RO.linear = False
-            RO.nphases = num_phases
-            RO.wl = wl
-            # add the RO to the rep
-            self.rep.addRO(RO)
-        ##################################################################
-        # make the super linear sim here
-        ##################################################################
-        super_frames_linear = [
-            Frame(self.seq, phase_bp, looped, True)
-            for phase_list in angle_list
-            for phase_bp in phase_list[:self.nphases] * self.repeats
-            for looped in (False, True)
-        ]
-        RO_super_linear_name = name_str.format(self.nphases * self.repeats, "Super Linear")
-        RO_super_linear = RunningOrder(RO_super_linear_name, super_frames_linear)
-        # tag RO for ini
-        RO_super_linear.nphases = self.nphases * self.repeats
-        # Its not that this RO is linear, but it doesn't need the extra steps.
-        RO_super_linear.linear = True
-        RO_super_linear.wl = wl
-        self.rep.addRO(RO_super_linear)
-        ##################################################################
-        # make the super NL sim here
-        ##################################################################
-        super_frames_nonlinear = []
-        for phase_list in angle_list:
-            off_phases = phase_list[self.nphases] * self.repeats
-            on_phases = phase_list[:self.nphases] * self.repeats
-            assert len(off_phases) == len(on_phases)
-            reactivation = [self.blank_bitplane] * len(off_phases)
-            super_frames_nonlinear.extend([Frame(self.seq, phase_bp, looped, True)
-                           for series in zip(reactivation, off_phases,
-                                             on_phases)
-                           for phase_bp in series
-                           for looped in (False, True)])
-        RO_name = name_str.format(num_phases, "Non-Linear")
-        RO_super_nonlinear_name = name_str.format(self.nphases * self.repeats, "Super Non-Linear")
-        RO_super_nonlinear = RunningOrder(RO_super_nonlinear_name, super_frames_nonlinear)
-        # tag RO for ini
-        RO_super_nonlinear.nphases = self.nphases * self.repeats
-        # Its not that this RO is linear, but it doesn't need the extra steps.
-        RO_super_nonlinear.linear = False
-        RO_super_nonlinear.wl = wl
-        self.rep.addRO(RO_super_nonlinear)
+            for reps, num_phases, ext_str in zip(
+                    (1, self.repeats),
+                    (np_linear, self.nphases),
+                    ("", "Super ")):
+                delta = self.nphases // num_phases
+                if order == 1:
+                    # linear sim case, super and regular
+                    frames = [
+                        Frame(self.seq, phase_bp, looped, True)
+                        for phase_list in angle_list
+                        for phase_bp in phase_list[:self.nphases:delta] * reps
+                        for looped in (False, True)
+                    ]
+                    RO_name = name_str.format(num_phases, ext_str + "Linear")
+                else:
+                    # non-linear SIM case
+                    frames = []
+                    for phase_list in angle_list:
+                        off_phases = phase_list[self.nphases::delta] * reps
+                        on_phases = phase_list[:self.nphases:delta] * reps
+                        assert len(off_phases) == len(on_phases)
+                        reactivation = [self.blank_bitplane] * len(off_phases)
+                        frames.extend([Frame(self.seq, phase_bp, looped, True)
+                                       for series in zip(reactivation,
+                                                         off_phases, on_phases)
+                                       for phase_bp in series
+                                       for looped in (False, True)])
+                    RO_name = name_str.format(num_phases, ext_str + "Non-Linear")
+                RO = RunningOrder(RO_name, frames)
+                # tag the RO for writing the INI file later
+                if order == 1:
+                    RO.linear = True
+                else:
+                    RO.linear = False
+                RO.nphases = num_phases
+                RO.wl = wl
+                # add the RO to the rep
+                self.rep.addRO(RO)
         ###################################################################
         # make single orientations
         ###################################################################
