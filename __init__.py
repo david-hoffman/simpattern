@@ -276,7 +276,7 @@ class SIMRepertoire(object):
     ])
 
     def __init__(self, name, wls, nas, orders, norientations, seq,
-                 SIM_2D=True, super_repeats=1):
+                 SIM_2D=True, super_repeats=1, onfrac=0.5):
         """
         Parameters
         ----------
@@ -357,6 +357,7 @@ class SIMRepertoire(object):
         self.rep.addRO(RunningOrder(
             "Blank", Frame(self.seq, self.blank_bitplane, True, False)
         ))
+        self.onfrac = onfrac
 
     def clear_rep(self):
         # make new internal Repertoire to hold everything.
@@ -370,8 +371,8 @@ class SIMRepertoire(object):
         # first level is wl
         self.bitplanes = {wl: {
             na: [
-                [BitPlane(pattern(ang, ideal_period(wl, na), phi),
-                          gen_name(ang, wl, na, n))
+                [BitPlane(pattern(ang, ideal_period(wl, na), phi, onfrac=self.onfrac),
+                          gen_name(ang, wl, na, n, self.onfrac))
                  for n, phi in enumerate(self.phases)] for ang in self.angles]
             for na in self.nas
         } for wl in self.wls}
@@ -522,11 +523,11 @@ class SIMRepertoire(object):
         self.write(path)
 
 
-def gen_name(angle, wl, na, n):
+def gen_name(angle, wl, na, n, onfrac):
     """
     Generate a unique name for a BitPlane
     """
     degree = np.rad2deg(angle)
     my_per = ideal_period(wl, na)
     name = 'pat-{}nm-{:.2f}NA{:+.1f}deg-{:02d}ph-{:.4f}pix-{:.2f}DC'
-    return name.format(wl, na, degree, n, my_per, 0.5)
+    return name.format(wl, na, degree, n, my_per, onfrac)
