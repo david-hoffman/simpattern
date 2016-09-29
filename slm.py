@@ -287,9 +287,7 @@ class Frame(object):
 
 
 class Sequence(object):
-    """
-    A class representing a sequence
-    """
+    """A class representing a sequence"""
 
     def __init__(self, path):
         """
@@ -319,9 +317,7 @@ class Sequence(object):
 
 
 class BitPlane(object):
-    """
-    BitPlanes have data (the image) and names
-    """
+    """BitPlanes have data (the image) and names"""
     # This class should take care of all the lowlevel tasks we may later
     # want to implement, such as loading from disk writing to disk, excetera
 

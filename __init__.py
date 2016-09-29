@@ -40,8 +40,7 @@ seq_1ms_LB = Sequence(seq_home + "48083 HHMI 1ms 1-bit Lit Balanced.seq11")
 seq_2ms_LB = Sequence(seq_home + "48084 HHMI 2ms 1-bit Lit Balanced.seq11")
 
 
-# newest one
-def pattern(angle, period, phi=0, onfrac=0.5, shape=(1536, 2048), SIM_2D=True):
+def pattern(angle, period, phi=0, onfrac=0.5, shape=(1536, 2048)):
     '''
     Generates a binary SLM pattern for SIM by generating a 2D sine wave
     and binarizing it
@@ -309,10 +308,15 @@ class SIMRepertoire(object):
             # Then we only want to take steps of 2pi/n in illumination which
             # means pi/n at the SLM
             phase_step = 2
+            # extra orders is for how many orders we have to use
+            extra_orders = 1
+            self.np_linear = 3
         else:
             phase_step = 1
+            extra_orders = 3
+            self.np_linear = 5
         # calculate the number of phases needed
-        self.nphases = np.prod(np.array(orders) * 2 + 1)
+        self.nphases = np.prod(np.array(orders) * 2 + extra_orders)
         # calculate actual phases
         self.phases = [(n / self.nphases / phase_step) * (2 * pi)
                        for n in range(self.nphases)]
@@ -394,12 +398,10 @@ class SIMRepertoire(object):
         # loop through the orders
         for order in self.orders:
             # calculate the number of phases
-            # NOTE: this is hardcoded for 2D-SIM
-            np_linear = order * 2 + 1
             # Calculate the offset of bitplanes
             for reps, num_phases, ext_str in zip(
                     (1, self.repeats),
-                    (np_linear, self.nphases),
+                    (self.np_linear, self.nphases),
                     ("", "Super ")):
                 delta = self.nphases // num_phases
                 if order == 1:
@@ -424,7 +426,8 @@ class SIMRepertoire(object):
                                                          off_phases, on_phases)
                                        for phase_bp in series
                                        for looped in (False, True)])
-                    RO_name = name_str.format(num_phases, ext_str + "Non-Linear")
+                    RO_name = name_str.format(num_phases, ext_str +
+                                              "Non-Linear")
                 RO = RunningOrder(RO_name, frames)
                 # tag the RO for writing the INI file later
                 if order == 1:
