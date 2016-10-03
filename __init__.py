@@ -245,7 +245,7 @@ class SIMRepertoire(object):
         'Filter Wheel 2 = "Filter 0"',
         r'File Index = "0,-1\0D\0A"',
         'Setpoints:Galvo = "0,10,0,0,0"',
-        ('Setpoints:Step 1 = "Laser[{wl:d} nm]; LC [0,1,2,3,4];'
+        ('Setpoints:Step 1 = "Laser[{wl:d} nm]; LC [{lc:}];'
          ' Delay [0]; Camera[0]; Imaging[TRUE];'
          ' {aotf_str};'
          ' BeamBlock[No change]"')
@@ -265,11 +265,11 @@ class SIMRepertoire(object):
          ' Delay [100]; Camera[0]; Imaging[FALSE];'
          ' AOTF[   0 405 nm(X);   0 488 nm(X);   0 560 nm(X);   0 405 nm(X)];'
          ' BeamBlock[Out]"'),
-        ('Setpoints:Step 2 = "Laser[{wl:d} nm]; LC [0,1,2,3,4];'
+        ('Setpoints:Step 2 = "Laser[{wl:d} nm]; LC [{lc:}];'
          ' Delay [100]; Camera[0]; Imaging[FALSE];'
          ' {aotf_str};'
          ' BeamBlock[In]"'),
-        ('Setpoints:Step 3 = "Laser[{wl:d} nm]; LC [0,1,2,3,4];'
+        ('Setpoints:Step 3 = "Laser[{wl:d} nm]; LC [{lc:}];'
          ' Delay [0]; Camera[0]; Imaging[TRUE];'
          ' {aotf_str};'
          ' BeamBlock[In]"')
@@ -495,12 +495,19 @@ class SIMRepertoire(object):
                     else:
                         str2write = self.nonlinear_str
                     # now format
+                    if RO.wl == 488:
+                        lc = "0,1,2,3,4"
+                    elif RO.wl == 561:
+                        lc = "6,7,8,9,10"
+                    else:
+                        lc = "0,0,0,0,0"
                     file.write(str2write.format(
                         wl=RO.wl,
                         aotf_str=format_aotf_str(RO.wl),
                         nphases=RO.nphases,
                         ROname=RO.name,
-                        RO_num=i
+                        RO_num=i,
+                        lc=lc
                     ))
                     file.write("\n\n")
                 except AttributeError:
