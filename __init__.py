@@ -263,7 +263,7 @@ class SIMRepertoire(object):
         'Setpoints:Galvo = "0,10,0,0,0"',
         ('Setpoints:Step 1 = "Laser[405 nm]; LC [5,5,5,5,5];'
          ' Delay [100]; Camera[0]; Imaging[FALSE];'
-         ' AOTF[   0 405 nm(X);   0 488 nm(X);   0 560 nm(X);   0 405 nm(X)];'
+         ' AOTF[   0 405 nm(X);   0 488 nm(X);   0 560 nm(X); 100 405 nm(X)];'
          ' BeamBlock[Out]"'),
         ('Setpoints:Step 2 = "Laser[{wl:d} nm]; LC [{lc:}];'
          ' Delay [100]; Camera[0]; Imaging[FALSE];'
