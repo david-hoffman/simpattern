@@ -304,6 +304,7 @@ class SIMRepertoire(object):
         self.repeats = super_repeats
         # for now hard code, we have to double the phases
         # so we can do 90 deg phase stepping.
+        self.onfrac = onfrac
         if SIM_2D:
             # Then we only want to take steps of 2pi/n in illumination which
             # means pi/n at the SLM
@@ -335,7 +336,7 @@ class SIMRepertoire(object):
         num_bitplanes += len(self.wls) + 1
         if num_bitplanes > 1024:
             raise RuntimeError(
-                ("These settings will generate {}",
+                ("These settings will generate {} "
                  "bitplanes which is more than 1024").format(num_bitplanes)
             )
         else:
@@ -357,7 +358,6 @@ class SIMRepertoire(object):
         self.rep.addRO(RunningOrder(
             "Blank", Frame(self.seq, self.blank_bitplane, True, False)
         ))
-        self.onfrac = onfrac
 
     def clear_rep(self):
         # make new internal Repertoire to hold everything.
@@ -497,7 +497,7 @@ class SIMRepertoire(object):
                     # now format
                     if RO.wl == 488:
                         lc = "0,1,2,3,4"
-                    elif RO.wl == 561:
+                    elif RO.wl == 560:
                         lc = "6,7,8,9,10"
                     else:
                         lc = "0,0,0,0,0"
