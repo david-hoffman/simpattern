@@ -261,7 +261,7 @@ class SIMRepertoire(object):
         'Filter Wheel 2 = "Filter 0"',
         r'File Index = "0,-1\0D\0A1,-1\0D\0A2,-1\0D\0A"',
         'Setpoints:Galvo = "0,10,0,0,0"',
-        ('Setpoints:Step 1 = "Laser[405 nm]; LC [5,5,5,5,5];'
+        ('Setpoints:Step 1 = "Laser[405 nm]; LC [0,0,0,0,0];'
          ' Delay [100]; Camera[0]; Imaging[FALSE];'
          ' AOTF[   0 405 nm(X);   0 488 nm(X);   0 560 nm(X); 100 405 nm(X)];'
          ' BeamBlock[Out]"'),
@@ -291,6 +291,8 @@ class SIMRepertoire(object):
         """
         # we have one sequence for now
         self.seq = seq
+        # save ndirs
+        self.ndirs = norientations
         # make new internal Repertoire to hold everything.
         self.rep = Repertoire(name)
         # what wavelengths to try
@@ -496,11 +498,15 @@ class SIMRepertoire(object):
                         str2write = self.nonlinear_str
                     # now format
                     if RO.wl == 488:
-                        lc = "0,1,2,3,4"
+                        lc_start = 1
                     elif RO.wl == 560:
-                        lc = "6,7,8,9,10"
+                        lc_start = 1 + self.ndirs
                     else:
-                        lc = "0,0,0,0,0"
+                        lc_start = -self.ndirs
+                    lc = ",".join([
+                        str(i)
+                        for i in range(lc_start, lc_start + self.ndirs)
+                    ])
                     file.write(str2write.format(
                         wl=RO.wl,
                         aotf_str=format_aotf_str(RO.wl),
