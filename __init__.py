@@ -244,7 +244,7 @@ class SIMRepertoire(object):
         'Filter Wheel 1 = "Filter 0"',
         'Filter Wheel 2 = "Filter 0"',
         r'File Index = "0,-1\0D\0A"',
-        'Setpoints:Galvo = "0,10,0,0,0"',
+        'Setpoints:Galvo = "{galvo:}"',
         ('Setpoints:Step 1 = "Laser[{wl:d} nm]; LC [{lc:}];'
          ' Delay [0]; Camera[0]; Imaging[TRUE];'
          ' {aotf_str};'
@@ -260,7 +260,7 @@ class SIMRepertoire(object):
         'Filter Wheel 1 = "Filter 0"',
         'Filter Wheel 2 = "Filter 0"',
         r'File Index = "0,-1\0D\0A1,-1\0D\0A2,-1\0D\0A"',
-        'Setpoints:Galvo = "0,10,0,0,0"',
+        'Setpoints:Galvo = "{galvo:}"',
         ('Setpoints:Step 1 = "Laser[405 nm]; LC [0,0,0,0,0];'
          ' Delay [100]; Camera[0]; Imaging[FALSE];'
          ' AOTF[   0 405 nm(X);   0 488 nm(X);   0 560 nm(X); 100 405 nm(X)];'
@@ -513,7 +513,8 @@ class SIMRepertoire(object):
                         nphases=RO.nphases,
                         ROname=RO.name,
                         RO_num=i,
-                        lc=lc
+                        lc=lc,
+                        galvo=",".join("0" * self.ndirs)
                     ))
                     file.write("\n\n")
                 except AttributeError:
