@@ -15,13 +15,13 @@ from numpy.linalg import norm
 from scipy.optimize import minimize
 import numexpr as ne
 try:
-    from pyfftw.interfaces.numpy_fft import (ifftshift, fftshift,
+    from pyfftw.interfaces.numpy_fft import (fftshift, ifftshift,
                                              rfftn, irfftn)
     import pyfftw
     # Turn on the cache for optimum performance
     pyfftw.interfaces.cache.enable()
 except ImportError:
-    from numpy.fft import ifftshift, fftshift, rfftn, irfftn
+    from numpy.fft import fftshift, ifftshift, rfftn, irfftn
 from dphutils import slice_maker
 from .slm import (Sequence, Repertoire, RunningOrder, Frame,
                   BitPlane, tuplify)
@@ -122,7 +122,7 @@ def pattern_params(my_pat, size=2):
     '''
     # REAL FFT!
     # note the limited shifting, we don't want to shift the last axis
-    my_pat_fft = ifftshift(rfftn(fftshift(my_pat)),
+    my_pat_fft = fftshift(rfftn(ifftshift(my_pat)),
                            axes=tuple(range(my_pat.ndim))[:-1])
     my_abs_pat_fft = abs(my_pat_fft)
     # find dc loc, center of FFT after shifting
