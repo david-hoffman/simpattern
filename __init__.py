@@ -261,7 +261,7 @@ class SIMRepertoire(object):
         'Filter Wheel 2 = "Filter 0"',
         r'File Index = "0,-1\0D\0A1,-1\0D\0A2,-1\0D\0A"',
         'Setpoints:Galvo = "{galvo:}"',
-        ('Setpoints:Step 1 = "Laser[405 nm]; LC [0,0,0,0,0];'
+        ('Setpoints:Step 1 = "Laser[405 nm]; LC [{galvo:}];'
          ' Delay [100]; Camera[0]; Imaging[FALSE];'
          ' AOTF[   0 405 nm(X);   0 488 nm(X);   0 560 nm(X); 100 405 nm(X)];'
          ' BeamBlock[Out]"'),
@@ -275,8 +275,8 @@ class SIMRepertoire(object):
          ' BeamBlock[In]"')
     ])
 
-    def __init__(self, name, wls, nas, orders, norientations, seq,
-                 SIM_2D=True, super_repeats=1, onfrac=0.5):
+    def __init__(self, name, wls, nas, orders, norientations, seq, onfrac=0.5,
+                 super_repeats=1, SIM_2D=True, doNL=True):
         """
         Parameters
         ----------
@@ -307,6 +307,7 @@ class SIMRepertoire(object):
         # for now hard code, we have to double the phases
         # so we can do 90 deg phase stepping.
         self.onfrac = onfrac
+        self.do_nl = doNL
         if SIM_2D:
             # Then we only want to take steps of 2pi/n in illumination which
             # means pi/n at the SLM
@@ -324,7 +325,7 @@ class SIMRepertoire(object):
         self.phases = [(n / self.nphases / phase_step) * (2 * pi)
                        for n in range(self.nphases)]
         # if we're doing nonlinear, add flipped patterns
-        if max(self.orders) > 1:
+        if max(self.orders) > 1 and self.do_nl:
             self.phases += list(np.array(self.phases) + pi / 2)
         # make sure the proposed repertoire will fit
         num_bitplanes = len(self.nas)
@@ -416,7 +417,7 @@ class SIMRepertoire(object):
                         for looped in (False, True)
                     ]
                     RO_name = name_str.format(num_phases, ext_str + "Linear")
-                else:
+                elif self.do_nl:
                     # non-linear SIM case
                     frames = []
                     for phase_list in angle_list:
@@ -431,6 +432,9 @@ class SIMRepertoire(object):
                                        for looped in (False, True)])
                     RO_name = name_str.format(num_phases, ext_str +
                                               "Non-Linear")
+                else:
+                    # order greater than 1 and no nonlinear requested
+                    continue
                 RO = RunningOrder(RO_name, frames)
                 # tag the RO for writing the INI file later
                 if order == 1:
