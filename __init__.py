@@ -439,6 +439,9 @@ class SIMRepertoire(object):
                     # order greater than 1 and no nonlinear requested
                     continue
                 print('Generating "' + RO_name + '"')
+                # the number of frames is double what one would expect because
+                # there's one frame to trigger the start and one to loop until
+                # triggered to finish
                 RO = RunningOrder(RO_name, frames)
                 # tag the RO for writing the INI file later
                 if order == 1:
