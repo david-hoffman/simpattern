@@ -314,18 +314,20 @@ class SIMRepertoire(object):
             phase_step = 2
             # extra orders is for how many orders we have to use
             extra_orders = 1
-            self.np_linear = 3
+            self.np_base = 1
         else:
             phase_step = 1
             extra_orders = 3
-            self.np_linear = 5
+            self.np_base = 3
         # calculate the number of phases needed
         self.nphases = np.prod(np.array(orders) * 2 + extra_orders)
+        print("number of phases =", self.nphases)
         # calculate actual phases
         self.phases = [(n / self.nphases / phase_step) * (2 * pi)
                        for n in range(self.nphases)]
         # if we're doing nonlinear, add flipped patterns
         if max(self.orders) > 1 and self.do_nl:
+            print("generating non-linear phases")
             self.phases += list(np.array(self.phases) + pi / 2)
         # make sure the proposed repertoire will fit
         num_bitplanes = len(self.nas)
@@ -405,7 +407,8 @@ class SIMRepertoire(object):
             # Calculate the offset of bitplanes
             for reps, num_phases, ext_str in zip(
                     (1, self.repeats),
-                    (self.np_linear, self.nphases),
+                    # here we need to add the order
+                    (self.np_base + order * 2, self.nphases),
                     ("", "Super ")):
                 delta = self.nphases // num_phases
                 if order == 1:
@@ -435,6 +438,7 @@ class SIMRepertoire(object):
                 else:
                     # order greater than 1 and no nonlinear requested
                     continue
+                print('Generating "' + RO_name + '"')
                 RO = RunningOrder(RO_name, frames)
                 # tag the RO for writing the INI file later
                 if order == 1:
@@ -453,6 +457,7 @@ class SIMRepertoire(object):
                 1, "{:.1f} angle".format(np.rad2deg(angle)))
             self.rep.addRO(RunningOrder(
                 RO_name, Frame(self.seq, phase_list[0], True, False)))
+            print('Generating "' + RO_name + '"')
 
     def gen_all_angles(self, wl, na, angle_list):
         """
@@ -473,6 +478,7 @@ class SIMRepertoire(object):
         frame = Frame(self.seq, all_angles_bitplane, True, False)
         # make RO and add to list
         self.rep.addRO(RunningOrder(RO_name, frame))
+        print('Generating "' + RO_name + '"')
 
     @property
     def name(self):
@@ -505,6 +511,8 @@ class SIMRepertoire(object):
                         lc_start = 1
                     elif RO.wl == 560:
                         lc_start = 1 + self.ndirs
+                    elif RO.wl == 532:
+                        lc_start = 1 + 2 * self.ndirs
                     else:
                         lc_start = -self.ndirs
                     lc = ",".join([
