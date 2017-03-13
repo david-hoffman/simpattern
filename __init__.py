@@ -333,10 +333,12 @@ class SIMRepertoire(object):
         num_bitplanes = len(self.nas)
         num_bitplanes *= len(self.wls)
         num_bitplanes *= norientations
-        num_bitplanes *= len(self.phases)
-        if max(self.orders) > 1:
-            # for non-linear phase switching
-            num_bitplanes *= 2
+        num_bitplanes *= (len(self.phases) // (1 + self.do_nl) +
+                          self.do_nl * (2 * np.sum(self.orders) +
+                                        len(self.orders)))
+        # if max(self.orders) > 1:
+        #     # for non-linear phase switching
+        #     num_bitplanes *= 2
         # for the all angles and blank patterns.
         num_bitplanes += len(self.wls) + 1
         if num_bitplanes > 1024:
