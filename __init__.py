@@ -286,8 +286,21 @@ class SIMRepertoire(object):
             wavelengths to generate patterns for
         nas : numeric or tuple
             NAs to generate patterns for
+        orders : numeric or tuple
+            Number of orders to generate patterns for, needed for NL
         norientations : int
             number of pattern orientations
+        seq : slm.Sequence object
+            The sequence to use for this repertoire.
+        onfrac : float
+            The fraction of "on" pixels. onfrac = 0.5 + DC / 2
+            where DC is the DC offset of the pattern
+        super_repeats : int
+            Number of times to repeat the superSIM pattern
+        SIM_2D : bool
+            Are these 2D patterns?
+        doNL : bool
+            Are these nonlinear patterns?
         """
         # we have one sequence for now
         self.seq = seq
