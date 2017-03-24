@@ -425,14 +425,14 @@ class SIMRepertoire(object):
                     # here we need to add the order
                     (self.np_base + order * 2, self.np_base + order * 2, self.nphases),
                     ("", "Single Orientation ", "Super "),
-                    (1, self.ndirs, 1)):
+                    (slice(None), slice(1), slice(None))):
                 delta = self.nphases // num_phases
                 if order == 1:
                     # linear sim case, super and regular
                     frames = [
                         Frame(self.seq, phase_bp, looped, True)
-                        for phase_list in angle_list
-                        for phase_bp in phase_list[:self.nphases // orients:delta] * reps
+                        for phase_list in angle_list[orients]
+                        for phase_bp in phase_list[:self.nphases:delta] * reps
                         for looped in (False, True)
                     ]
                     RO_name = name_str.format(num_phases, ext_str + "Linear")
