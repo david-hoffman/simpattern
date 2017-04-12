@@ -276,7 +276,7 @@ class SIMRepertoire(object):
     ])
 
     def __init__(self, name, wls, nas, orders, norientations, seq, onfrac=0.5,
-                 super_repeats=1, SIM_2D=True, doNL=True):
+                 super_repeats=1, SIM_2D=True, doNL=True, super_mult=0):
         """
         Parameters
         ----------
@@ -301,6 +301,10 @@ class SIMRepertoire(object):
             Are these 2D patterns?
         doNL : bool
             Are these nonlinear patterns?
+        super_mult : int
+            How many extra phases do you want? As a multiple of the phases
+            you need. Useful for when extra orders aren't required (No NL)
+            or when you want to restrict the number of extra phases.
         """
         # we have one sequence for now
         self.seq = seq
@@ -334,6 +338,9 @@ class SIMRepertoire(object):
             self.np_base = 3
         # calculate the number of phases needed
         self.nphases = np.prod(np.array(orders) * 2 + extra_orders)
+        # expand for phase fitting if wanted
+        if super_mult:
+            self.nphases *= super_mult
         print("number of phases =", self.nphases)
         # calculate actual phases
         self.phases = [(n / self.nphases / phase_step) * (2 * pi)
