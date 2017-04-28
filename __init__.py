@@ -218,11 +218,11 @@ def format_aotf_str(wl):
     """
     Short utility to format the text needed for the INI file
     """
-    wl_dict = dict(nm488=0, nm532=0, nm560=0)
+    wl_dict = dict(nm488=0, nm532=0, nm560=0, nm642=0, nm405=0)
     wl = "nm" + str(wl)
     assert wl in wl_dict, "Invalid wavelength = {}".format(wl)
     wl_dict[wl] = 100
-    fmt_str = 'AOTF[ {nm488:3d} 488 nm(X);  {nm532:3d} 532 nm(X); {nm560:3d} 560 nm(X);   0 405 nm(X)]'
+    fmt_str = 'AOTF[ {nm488:3d} 488 nm(X); {nm532:3d} 532 nm(X); {nm560:3d} 560 nm(X); {nm642:3d} 642 nm(X); {nm405:3d} 405 nm(X)]'
     return fmt_str.format(**wl_dict)
 
 
@@ -263,7 +263,7 @@ class SIMRepertoire(object):
         'Setpoints:Galvo = "{galvo:}"',
         ('Setpoints:Step 1 = "Laser[405 nm]; LC [{galvo:}];'
          ' Delay [100]; Camera[0]; Imaging[FALSE];'
-         ' AOTF[   0 405 nm(X);   0 488 nm(X);   0 560 nm(X); 100 405 nm(X)];'
+         ' AOTF[   0 642 nm(X);   0 488 nm(X);   0 560 nm(X); 100 405 nm(X)];'
          ' BeamBlock[Out]"'),
         ('Setpoints:Step 2 = "Laser[{wl:d} nm]; LC [{lc:}];'
          ' Delay [100]; Camera[0]; Imaging[FALSE];'
@@ -274,6 +274,15 @@ class SIMRepertoire(object):
          ' {aotf_str};'
          ' BeamBlock[In]"')
     ])
+
+    linear_w_react_str = "\n".join([
+            '[Multiscan:{ROname}]',
+            'Scan Def = "{ROname_sub},405 nm WF\\0D\\0A"',
+            'Running Order = "{RO_num:d}"',
+            r'N Times = "0,0\0D\0A"',
+            r'Nth Cycle = "1,1\0D\0A"',
+            'Interleave = TRUE'
+        ])
 
     def __init__(self, name, wls, nas, orders, norientations, seq, onfrac=0.5,
                  super_repeats=1, SIM_2D=True, doNL=True, super_mult=0):
@@ -385,6 +394,17 @@ class SIMRepertoire(object):
         self.rep.addRO(RunningOrder(
             "Blank", Frame(self.seq, self.blank_bitplane, True, False)
         ))
+        # add bitplane with timing
+        self.blankwtiming = [
+            Frame(self.seq, self.blank_bitplane, False, True),
+            Frame(self.seq, self.blank_bitplane, True, True)
+        ]
+
+        RO405 = RunningOrder("405 nm WF", self.blankwtiming)
+        RO405.wl = 405
+        RO405.nphases = 1
+        RO405.linear = True
+        self.rep.addRO(RO405)
 
     def clear_rep(self):
         # make new internal Repertoire to hold everything.
@@ -428,11 +448,11 @@ class SIMRepertoire(object):
             # calculate the number of phases
             # Calculate the offset of bitplanes
             for reps, num_phases, ext_str, orients in zip(
-                    (1, 1, self.repeats),
+                    (1, 1, 1, self.repeats),
                     # here we need to add the order
-                    (self.np_base + order * 2, self.np_base + order * 2, self.nphases),
-                    ("", "Single Orientation ", "Super "),
-                    (slice(None), slice(1), slice(None))):
+                    (self.np_base + order * 2, self.np_base + order * 2, self.np_base + order * 2, self.nphases),
+                    ("", "React ", "Single Orientation ", "Super "),
+                    (slice(None), slice(None), slice(1), slice(None))):
                 delta = self.nphases // num_phases
                 if order == 1:
                     # linear sim case, super and regular
@@ -442,6 +462,8 @@ class SIMRepertoire(object):
                         for phase_bp in phase_list[:self.nphases:delta] * reps
                         for looped in (False, True)
                     ]
+                    if ext_str == "React ":
+                        frames += self.blankwtiming
                     RO_name = name_str.format(num_phases, ext_str + "Linear")
                 elif self.do_nl:
                     # non-linear SIM case
@@ -528,31 +550,46 @@ class SIMRepertoire(object):
         with open(filename, "w") as file:
             for i, RO in enumerate(rep):
                 try:
+                    if "Single Orientation" in RO.name or "WF" in RO.name:
+                        ndirs = 1
+                    else:
+                        ndirs = self.ndirs
                     if RO.linear:
-                        str2write = self.linear_str
+                        if "React " in RO.name:
+                            str2write = self.linear_w_react_str
+                        else:
+                            str2write = self.linear_str
                     else:
                         str2write = self.nonlinear_str
                     # now format
                     if RO.wl == 488:
                         lc_start = 1
+                    elif RO.wl == 405:
+                        lc_start = 0
                     elif RO.wl == 560:
                         lc_start = 1 + self.ndirs
                     elif RO.wl == 532:
                         lc_start = 1 + 2 * self.ndirs
+                    elif RO.wl == 642:
+                        lc_start = 1 + 3 * self.ndirs
                     else:
                         lc_start = -self.ndirs
                     lc = ",".join([
                         str(i)
-                        for i in range(lc_start, lc_start + self.ndirs)
+                        for i in range(lc_start, lc_start + ndirs)
                     ])
-                    file.write(str2write.format(
+                    str_dict = dict(
                         wl=RO.wl,
                         aotf_str=format_aotf_str(RO.wl),
                         nphases=RO.nphases,
                         ROname=RO.name,
+                        ROname_sub=RO.name.replace("React ", ""),
                         RO_num=i,
                         lc=lc,
-                        galvo=",".join("0" * self.ndirs)
+                        galvo=",".join("0" * ndirs)
+                    )
+                    file.write(str2write.format(
+                        **str_dict
                     ))
                     file.write("\n\n")
                 except AttributeError:
