@@ -241,13 +241,13 @@ class SIMRepertoire(object):
         'N Phases = {nphases:d}',
         'Detection Mode = "Camera 1"',
         'Pixel size (um) = "0.13, 0.13"',
-        'Filter Wheel 1 = "Filter 0"',
+        'Filter Wheel 1 = "Filter {filter:d}"',
         'Filter Wheel 2 = "Filter 0"',
         r'File Index = "0,-1\0D\0A"',
         'Setpoints:Galvo = "{galvo:}"',
         ('Setpoints:Step 1 = "Laser[{wl:d} nm]; LC [{lc:}];'
          ' Delay [0]; Camera[0]; Imaging[TRUE];'
-         ' {aotf_str};'
+         ' AOTF[ 100 {wl:d} nm(X);   0 532 nm(X);   0 560 nm(X);  0 405 nm(X)];'
          ' BeamBlock[No change]"')
     ])
 
@@ -257,7 +257,7 @@ class SIMRepertoire(object):
         'N Phases = {nphases:d}',
         'Detection Mode = "Camera 1"',
         'Pixel size (um) = "0.13, 0.13"',
-        'Filter Wheel 1 = "Filter 0"',
+        'Filter Wheel 1 = "Filter {filter:d}"',
         'Filter Wheel 2 = "Filter 0"',
         r'File Index = "0,-1\0D\0A1,-1\0D\0A2,-1\0D\0A"',
         'Setpoints:Galvo = "{galvo:}"',
@@ -267,11 +267,11 @@ class SIMRepertoire(object):
          ' BeamBlock[Out]"'),
         ('Setpoints:Step 2 = "Laser[{wl:d} nm]; LC [{lc:}];'
          ' Delay [100]; Camera[0]; Imaging[FALSE];'
-         ' {aotf_str};'
+         ' AOTF[ 100 {wl:d} nm(X);   0 532 nm(X);   0 560 nm(X);  0 405 nm(X)];'
          ' BeamBlock[In]"'),
         ('Setpoints:Step 3 = "Laser[{wl:d} nm]; LC [{lc:}];'
          ' Delay [0]; Camera[0]; Imaging[TRUE];'
-         ' {aotf_str};'
+         ' AOTF[ 100 {wl:d} nm(X);   0 532 nm(X);   0 560 nm(X);  0 405 nm(X)];'
          ' BeamBlock[In]"')
     ])
 
@@ -508,9 +508,7 @@ class SIMRepertoire(object):
             print('Generating "' + RO_name + '"')
 
     def gen_all_angles(self, wl, na, angle_list):
-        """
-        Makes a RunningOrder to display all angles at once
-        """
+        """Makes a RunningOrder to display all angles at once"""
         # make an array of the first phase of the data
         data_array = np.array([
             ang[0].image for ang in angle_list
@@ -533,16 +531,12 @@ class SIMRepertoire(object):
         return self.rep.name
 
     def write(self, path=""):
-        """
-        Write the internal repertoire to a repz11 file
-        """
+        """Write the internal repertoire to a repz11 file"""
         self.rep.write_repz11(path)
         self.write_ini(path)
 
     def write_ini(self, path):
-        """
-        Method to write the INI file for LabVIEW
-        """
+        """Method to write the INI file for LabVIEW"""
         # pull rep out for ease of use
         rep = self.rep
         filename = os.path.join(path, rep.name + ".ini")
@@ -564,14 +558,19 @@ class SIMRepertoire(object):
                     # now format
                     if RO.wl == 488:
                         lc_start = 1
+                        filter_num = 1
                     elif RO.wl == 405:
                         lc_start = 0
+                        filter_num = 1
                     elif RO.wl == 560:
                         lc_start = 1 + self.ndirs
+                        filter_num = 0
                     elif RO.wl == 532:
                         lc_start = 1 + 2 * self.ndirs
+                        filter_num = 2
                     elif RO.wl == 642:
                         lc_start = 1 + 3 * self.ndirs
+                        filter_num = 3
                     else:
                         lc_start = -self.ndirs
                     lc = ",".join([
@@ -585,6 +584,7 @@ class SIMRepertoire(object):
                         ROname=RO.name,
                         ROname_sub=RO.name.replace("React ", ""),
                         RO_num=i,
+                        filter=filter_num,
                         lc=lc,
                         galvo=",".join("0" * ndirs)
                     )
