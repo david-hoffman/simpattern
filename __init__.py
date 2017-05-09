@@ -263,7 +263,7 @@ class SIMRepertoire(object):
         'Setpoints:Galvo = "{galvo:}"',
         ('Setpoints:Step 1 = "Laser[405 nm]; LC [{galvo:}];'
          ' Delay [100]; Camera[0]; Imaging[FALSE];'
-         ' AOTF[   0 642 nm(X);   0 488 nm(X);   0 560 nm(X); 100 405 nm(X)];'
+         ' AOTF[   0 {wl:d} nm(X);   0 488 nm(X);   0 560 nm(X); 100 405 nm(X)];'
          ' BeamBlock[Out]"'),
         ('Setpoints:Step 2 = "Laser[{wl:d} nm]; LC [{lc:}];'
          ' Delay [100]; Camera[0]; Imaging[FALSE];'
@@ -273,6 +273,26 @@ class SIMRepertoire(object):
          ' Delay [0]; Camera[0]; Imaging[TRUE];'
          ' AOTF[ 100 {wl:d} nm(X);   0 532 nm(X);   0 560 nm(X);  0 405 nm(X)];'
          ' BeamBlock[In]"')
+    ])
+
+    react_all_str = "\n".join([
+        '[Sequence setpoints:{ROname}]',
+        'Running Order = {RO_num:d}',
+        'N Phases = {nphases:d}',
+        'Detection Mode = "Camera 1"',
+        'Pixel size (um) = "0.13, 0.13"',
+        'Filter Wheel 1 = "Filter {filter:d}"',
+        'Filter Wheel 2 = "Filter 0"',
+        r'File Index = "0,-1\0D\0A1,-1\0D\0A2,-1\0D\0A"',
+        'Setpoints:Galvo = "{galvo:}"',
+        ('Setpoints:Step 1 = "Laser[405 nm]; LC [{galvo:}];'
+         ' Delay [100]; Camera[0]; Imaging[FALSE];'
+         ' AOTF[   0 {wl:d} nm(X);   0 488 nm(X);   0 560 nm(X); 100 405 nm(X)];'
+         ' BeamBlock[No change]"'),
+        ('Setpoints:Step 2 = "Laser[{wl:d} nm]; LC [{lc:}];'
+         ' Delay [100]; Camera[0]; Imaging[True];'
+         ' AOTF[ 100 {wl:d} nm(X);   0 532 nm(X);   0 560 nm(X);  0 405 nm(X)];'
+         ' BeamBlock[No change]"')
     ])
 
     linear_w_react_str = "\n".join([
@@ -362,9 +382,10 @@ class SIMRepertoire(object):
         num_bitplanes = len(self.nas)
         num_bitplanes *= len(self.wls)
         num_bitplanes *= norientations
-        num_bitplanes *= (len(self.phases) // (1 + self.do_nl) +
-                          self.do_nl * (2 * np.sum(self.orders) +
-                                        len(self.orders)))
+        # all phases will be used for super-NL running order
+        num_bitplanes *= len(self.phases) # // (1 + self.do_nl) +
+                          # self.do_nl * (2 * np.sum(self.orders[1:]) +
+                          #               len(self.orders[1:]))
         # if max(self.orders) > 1:
         #     # for non-linear phase switching
         #     num_bitplanes *= 2
@@ -448,42 +469,51 @@ class SIMRepertoire(object):
             # calculate the number of phases
             # Calculate the offset of bitplanes
             for reps, num_phases, ext_str, orients in zip(
-                    (1, 1, 1, self.repeats),
+                    (1, 1, 1, 1, self.repeats),
                     # here we need to add the order
-                    (self.np_base + order * 2, self.np_base + order * 2, self.np_base + order * 2, self.nphases),
-                    ("", "React ", "Single Orientation ", "Super "),
-                    (slice(None), slice(None), slice(1), slice(None))):
+                    (self.np_base + order * 2, self.np_base + order * 2, self.np_base + order * 2, self.np_base + order * 2, self.nphases),
+                    ("", "React ", "React_All ", "Single Orientation ", "Super "),
+                    (slice(None), slice(None), slice(None), slice(1), slice(None))):
                 delta = self.nphases // num_phases
                 if order == 1:
                     # linear sim case, super and regular
-                    frames = [
-                        Frame(self.seq, phase_bp, looped, True)
+                    series_list = [
+                        phase_bp
                         for phase_list in angle_list[orients]
                         for phase_bp in phase_list[:self.nphases:delta] * reps
-                        for looped in (False, True)
                     ]
-                    if ext_str == "React ":
-                        frames += self.blankwtiming
+                    if ext_str == "React_All ":
+                        series_list = [(phase_bp, self.blank_bitplane) for phase_bp in series_list]
+                    else:
+                        series_list = [(phase_bp, ) for phase_bp in series_list]
                     RO_name = name_str.format(num_phases, ext_str + "Linear")
                 elif self.do_nl:
                     # non-linear SIM case
-                    frames = []
+                    series_list = []
                     for phase_list in angle_list:
                         off_phases = phase_list[self.nphases::delta] * reps
                         on_phases = phase_list[:self.nphases:delta] * reps
                         assert len(off_phases) == len(on_phases)
                         reactivation = [self.blank_bitplane] * len(off_phases)
-                        frames.extend([Frame(self.seq, phase_bp, looped, True)
-                                       for series in zip(reactivation,
-                                                         off_phases, on_phases)
-                                       for phase_bp in series
-                                       for looped in (False, True)])
+                        series_list.extend([
+                            phase_bp
+                            for series in zip(reactivation, off_phases, on_phases)
+                            for phase_bp in series
+                        ])
                     RO_name = name_str.format(num_phases, ext_str +
                                               "Non-Linear")
                 else:
                     # order greater than 1 and no nonlinear requested
                     continue
                 print('Generating "' + RO_name + '"')
+                frames = [
+                    Frame(self.seq, phase_bp, looped, True)
+                    for series in series_list
+                    for phase_bp in series
+                    for looped in (False, True)
+                ]
+                if ext_str == "React ":
+                    frames += self.blankwtiming
                 # the number of frames is double what one would expect because
                 # there's one frame to trigger the start and one to loop until
                 # triggered to finish
@@ -532,7 +562,9 @@ class SIMRepertoire(object):
 
     def write(self, path=""):
         """Write the internal repertoire to a repz11 file"""
+        print("Writing .repz11")
         self.rep.write_repz11(path)
+        print("Writing .ini")
         self.write_ini(path)
 
     def write_ini(self, path):
@@ -551,6 +583,8 @@ class SIMRepertoire(object):
                     if RO.linear:
                         if "React " in RO.name:
                             str2write = self.linear_w_react_str
+                        elif "React_All " in RO.name:
+                            str2write = self.react_all_str
                         else:
                             str2write = self.linear_str
                     else:
