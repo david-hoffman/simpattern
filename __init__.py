@@ -483,7 +483,7 @@ class SIMRepertoire(object):
                         for phase_bp in phase_list[:self.nphases:delta] * reps
                     ]
                     if ext_str == "React_All ":
-                        series_list = [(phase_bp, self.blank_bitplane) for phase_bp in series_list]
+                        series_list = [(self.blank_bitplane, phase_bp) for phase_bp in series_list]
                     else:
                         series_list = [(phase_bp, ) for phase_bp in series_list]
                     RO_name = name_str.format(num_phases, ext_str + "Linear")
