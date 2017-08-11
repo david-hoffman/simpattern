@@ -127,11 +127,13 @@ class Repertoire(object):
         # start a list for the final printout
         bps = ['IMAGES']
         # iterate through bitplanes, which will be sorted be name
-        for i, bp in enumerate(sorted(self.bitplanes)):
-            # we assume bitplanes have a bit depth of 1 here.
-            bps.append('1 "' + bp.name + '.bmp"')
+        i = 0
+        for bp in sorted(self.bitplanes):
+            bps.append('{} "{}.bmp"'.format(bp.bitdepth, bp.name))
             # update dict
             self.bp_dict[bp] = i
+            # adjust offset correctly
+            i += bp.bitdepth
         # finish printout
         bps.append('IMAGES_END\n\n')
         # save string internally for later use
@@ -360,6 +362,11 @@ class BitPlane(object):
         # we want unique names
         return self._name
 
+    @property
+    def bitdepth(self):
+        # we want unique names
+        return 1
+
 
 # need to subclass bitplane so that it can handle 24 bit images
 class BitPlane24(BitPlane):
@@ -383,6 +390,10 @@ class BitPlane24(BitPlane):
         # return a bytes object
         return output.getvalue()
 
+    @property
+    def bitdepth(self):
+        # we want unique names
+        return 24
 
 def _24_bit_to_RGB(stack):
     """Converts a stack of single bit images to an rgb image

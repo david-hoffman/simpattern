@@ -718,7 +718,7 @@ class PALMRepertoire(ExptRepertoire):
         # expand bitplanes into stack
         data_stack = np.array([phase_bp.image for angle in angle_list for phase_bp in angle])
         # make a 24-bit bitplane and single frame
-        bp24 = BitPlane24(data_stack, RO_name)
+        bp24 = BitPlane24(data_stack, RO_name.replace(" ", "-"))
         # looping without triggering
         frame = Frame(self.seq24bit, bp24, True, False)
         # make and add the RO
@@ -749,7 +749,7 @@ class PALMRepertoire(ExptRepertoire):
             # digitize bitplanes for one angle phase stepping
             angle_bp_list.append(d > 0.5)
         # make a new 24-bit plane
-        bp24 = BitPlane24(np.concatenate(angle_bp_list), RO_name)
+        bp24 = BitPlane24(np.concatenate(angle_bp_list), RO_name.replace(" ", "-"))
         # looping without triggering
         frame = Frame(self.seq24bit, bp24, True, False)
         # make and add the RO
