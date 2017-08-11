@@ -214,16 +214,8 @@ def ideal_period(wavelength, na=0.85):
     return period
 
 
-def format_aotf_str(wl):
     """
-    Short utility to format the text needed for the INI file
     """
-    wl_dict = dict(nm488=0, nm532=0, nm560=0, nm642=0, nm405=0)
-    wl = "nm" + str(wl)
-    assert wl in wl_dict, "Invalid wavelength = {}".format(wl)
-    wl_dict[wl] = 100
-    fmt_str = 'AOTF[ {nm488:3d} 488 nm(X); {nm532:3d} 532 nm(X); {nm560:3d} 560 nm(X); {nm642:3d} 642 nm(X); {nm405:3d} 405 nm(X)]'
-    return fmt_str.format(**wl_dict)
 
 
 class SIMRepertoire(object):
@@ -613,7 +605,6 @@ class SIMRepertoire(object):
                     ])
                     str_dict = dict(
                         wl=RO.wl,
-                        aotf_str=format_aotf_str(RO.wl),
                         nphases=RO.nphases,
                         ROname=RO.name,
                         ROname_sub=RO.name.replace("React ", ""),
