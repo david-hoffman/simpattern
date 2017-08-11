@@ -359,3 +359,46 @@ class BitPlane(object):
     def name(self):
         # we want unique names
         return self._name
+
+
+# need to subclass bitplane so that it can handle 24 bit images
+class BitPlane24(BitPlane):
+    """A subclass to deal with 24 bit patterns."""
+    def __init__(self, images, name=None):
+        """"""
+        # I'm expecting a stack of images, so the z dimension should be 24
+        if len(images) != 24:
+            raise ValueError("Image stack is not 24 images long")
+        super().__init__(images, name)
+
+    def __bytes__(self):
+        """Convert Image to byte string"""
+        # form the 8 bit grayscale image
+        bp_img = Image.fromarray(_24_bit_to_RGB(self.image), mode='RGB')
+        # create an output bytes buffer to save the image to
+        output = BytesIO()
+        # save the image to the buffer, but we want to save as 24-bit RGB
+        # so no need for the extra conversion.
+        bp_img.save(output, "BMP")
+        # return a bytes object
+        return output.getvalue()
+
+
+def _24_bit_to_RGB(stack):
+    """Converts a stack of single bit images to an rgb image
+    such that the final image bits are ordered as:
+    16, 8, 0, 17, 9, 1, 18, 10, 2, 19, 11, 3, 20, 12, 4, 21, 13, 5, 22, 14, 6, 23, 15, 7
+
+    Note
+    ----
+    np.arange(24).reshape(3, -1)[::-1].T.ravel() gives the above ordering.
+    """
+    # convert to bool to make sure we have "bits" and reshape so that we have
+    # "columns" of bits
+    stack24 = stack.astype(bool).reshape((8, 3) + stack.shape[1:])
+    # make a bit array to multiply our columns by
+    bits = 2 ** np.arange(8)
+    # reverse our columns (i.e. flip position 0 and 7 etc.)
+    stackRGB = (stack24[::-1] * bits[:, None, None, None]).sum(0).astype(np.uint8)
+    # Roll axis so its compatible with images.
+    return np.rollaxis(stackRGB, 0, 3)
