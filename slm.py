@@ -316,10 +316,12 @@ class BitPlane(object):
     # want to implement, such as loading from disk writing to disk, excetera
 
     def __init__(self, image, name=None):
-        """
-        """
+        """"""
+        # validity checks
+        if np.issubdtype(np.inexact, image.dtype) or image.max() > 1 or image.min() < 0:
+            raise ValueError("Image data is not single bit {}".format(image))
         # make a copy so the external array can be used
-        self.image = image
+        self.image = image.copy()
         # make it unchangeable
         self.image.flags.writeable = False
         if name is None:
