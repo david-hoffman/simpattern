@@ -24,7 +24,7 @@ except ImportError:
     from numpy.fft import fftshift, ifftshift, rfftn, irfftn
 from dphutils import slice_maker
 from .slm import (Sequence, Repertoire, RunningOrder, Frame,
-                  BitPlane, tuplify)
+                  BitPlane, BitPlane24, tuplify)
 # define pi for later use
 pi = np.pi
 
@@ -221,7 +221,7 @@ class ExptRepertoire(object):
     This is _not_ a subclass of slm.Repertoire, but does hold an instance
     """
 
-    blank_bitplane = BitPlane(np.zeros((1536, 2048)), "Blank")
+    blank_bitplane = BitPlane(np.zeros((1536, 2048), dtype=bool), "Blank")
 
     def __init__(self, name, wls, nas, phases, norientations, seq, onfrac=0.5):
         """
@@ -327,8 +327,6 @@ class SIMRepertoire(ExptRepertoire):
 
     This is _not_ a subclass of slm.Repertoire, but does hold an instance
     """
-
-    blank_bitplane = BitPlane(np.zeros((1536, 2048)), "Blank")
 
     linear_str = "\n".join([
         '[Sequence setpoints:{ROname}]',
@@ -662,6 +660,101 @@ class SIMRepertoire(ExptRepertoire):
                 for phase_list in tuplify(series)
                 for phase_bp in tuplify(phase_list)
                 for looped in (False, True)]
+
+
+class PALMRepertoire(ExptRepertoire):
+    """Subclass of ExptRepertoire to generate reps for PALM
+
+    The problem we're having is that we're burning the objectives
+    by spinning things around in the back pupil or spreading the 
+    energy out can we avoid this ..."""
+
+    def __init__(self, name, wls, nas, seq1bit, seq24bit):
+        """
+        Parameters
+        ----------
+        name : string
+            name of the repertoire
+        wls : numeric or tuple
+            wavelengths to generate patterns for
+        nas : numeric or tuple
+            NAs to generate patterns for
+        seq1bit : slm.Sequence object
+            the sequence for the 1 bit images
+        seq24bit : slm.Sequence object
+            the sequence for the 24 bit images
+        """
+        if not (seq24bit is seq_24_1ms or seq24bit is seq_24_50ms):
+            raise ValueError("Must use a 24 bit sequence")
+        self.seq24bit = seq24bit
+        # for now we're going to assume we're using a 3 phase mask (makes for even divsion)
+        # assuming that we're only doing two beams
+        phase_step = 2
+        nphases = 8
+        onfrac = 0.5
+        # we want 8 phases
+        phases = [(n / nphases / phase_step) * (2 * pi)
+               for n in range(8)]
+        super().__init__(name, wls, nas, phases, 3, seq1bit, onfrac)
+
+
+    def make_ROs(self):
+        """
+        Sub-method that makes the running orders and adds them to the
+        Repertoire.
+        """
+        for wl, na_dict in self.bitplanes.items():
+            for na, angle_list in na_dict.items():
+                self.gen_palms_2(wl, na, angle_list)
+                self.gen_palms_6(wl, na, angle_list)
+
+    def gen_palms_2(self, wl, na, angle_list):
+        """Makes a RunningOrder to display all angles at once"""
+        # make an array of the first phase of the data
+        RO_name = ("{} nm ".format(wl) +
+            "{:.2f} NA ".format(na) +
+            "2 Beam PALM")
+        print('Generating "' + RO_name + '"')
+        # expand bitplanes into stack
+        data_stack = np.array([phase_bp.image for angle in angle_list for phase_bp in angle])
+        # make a 24-bit bitplane and single frame
+        bp24 = BitPlane24(data_stack, RO_name)
+        # looping without triggering
+        frame = Frame(self.seq24bit, bp24, True, False)
+        # make and add the RO
+        RO = RunningOrder(RO_name, frame)
+        self.rep.addRO(RO)
+
+    def gen_palms_6(self, wl, na, angle_list):
+        """Makes a RunningOrder to display all angles at once"""
+        # make an array of the first phase of the data
+        RO_name = ("{} nm ".format(wl) +
+            "{:.2f} NA ".format(na) +
+            "6 Beam PALM")
+        print('Generating "' + RO_name + '"')
+        # make an array of all the bitplanes (ordered as angle x phase)
+        data_array = np.array([
+            [phase_bp.image for phase_bp in angle] for angle in angle_list 
+        ])
+        # set up container
+        angle_bp_list = []
+        # loop through angle indexes
+        angle_idxs = list(range(data_array.shape[0]))
+        for i in angle_idxs:
+            # make a slice
+            s = angle_idxs[:i] + angle_idxs[i + 1:]
+            # average the first phase of two angles and all the phases
+            # of the other angles
+            d = (data_array[s, :1].sum(0) + data_array[i]) / len(angle_idxs)
+            # digitize bitplanes for one angle phase stepping
+            angle_bp_list.append(d > 0.5)
+        # make a new 24-bit plane
+        bp24 = BitPlane24(np.concatenate(angle_bp_list), RO_name)
+        # looping without triggering
+        frame = Frame(self.seq24bit, bp24, True, False)
+        # make and add the RO
+        RO = RunningOrder(RO_name, frame)
+        self.rep.addRO(RO)
 
 
 def _gen_name(angle, wl, na, n, onfrac):
