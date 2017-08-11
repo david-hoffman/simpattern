@@ -218,15 +218,9 @@ class Repertoire(object):
             zf.writestr(self.name + ".rep", str(self).encode())
             # write images to zipfile
             for bp in self.bitplanes:
-                # form the 8 bit grayscale image
-                bp_img = Image.fromarray(
-                    (bp.image * 255).astype('uint8'), mode='L')
-                # create an output bytes buffer to save the image to
-                output = BytesIO()
-                # save the image to the buffer
-                bp_img.convert('1').save(output, "BMP")
                 # write the buffer to the zipfile
-                zf.writestr(bp.name + ".bmp", output.getvalue())
+                # zf.writestr(bp.name + ".bmp", output.getvalue())
+                zf.writestr(bp.name + ".bmp", bytes(bp))
 
 
 class RunningOrder(object):
@@ -346,6 +340,18 @@ class BitPlane(object):
     def __lt__(self, other):
         # we don't care about the specific names
         return self.name <= other.name
+
+    def __bytes__(self):
+        """Convert Image to byte string"""
+        # form the 8 bit grayscale image
+        bp_img = Image.fromarray(
+            (self.image * 255).astype('uint8'), mode='L')
+        # create an output bytes buffer to save the image to
+        output = BytesIO()
+        # save the image to the buffer
+        bp_img.convert('1').save(output, "BMP")
+        # return a bytes object
+        return output.getvalue()
 
     @property
     def name(self):
