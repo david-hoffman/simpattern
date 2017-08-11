@@ -214,11 +214,114 @@ def ideal_period(wavelength, na=0.85):
     return period
 
 
+class ExptRepertoire(object):
     """
+    A class that takes care of the actual generation of images
+
+    This is _not_ a subclass of slm.Repertoire, but does hold an instance
     """
 
+    blank_bitplane = BitPlane(np.zeros((1536, 2048)), "Blank")
 
-class SIMRepertoire(object):
+    def __init__(self, name, wls, nas, phases, norientations, seq, onfrac=0.5):
+        """
+        Parameters
+        ----------
+        name : string
+            name of the repertoire
+        wls : numeric or tuple
+            wavelengths to generate patterns for
+        nas : numeric or tuple
+            NAs to generate patterns for
+        orders : numeric or tuple
+            Number of orders to generate patterns for, needed for NL
+        norientations : int
+            number of pattern orientations
+        seq : slm.Sequence object
+            The sequence to use for this repertoire.
+        onfrac : float
+            The fraction of "on" pixels. onfrac = 0.5 + DC / 2
+            where DC is the DC offset of the pattern
+        """
+        # we have one sequence for now
+        self.seq = seq
+        # save ndirs
+        self.ndirs = norientations
+        # make new internal Repertoire to hold everything.
+        self.rep = Repertoire(name)
+        # what wavelengths to try
+        self.wls = tuplify(wls)
+        # what na's to try
+        self.nas = tuplify(nas)
+        self.onfrac = onfrac
+        # calculate actual phases
+        self.phases = phases
+        # if we're doing nonlinear, add flipped patterns
+        # make sure the proposed repertoire will fit
+        num_bitplanes = len(self.nas)
+        num_bitplanes *= len(self.wls)
+        num_bitplanes *= norientations
+        # all phases will be used for super-NL running order
+        num_bitplanes *= len(self.phases)
+        num_bitplanes += len(self.wls) + 1
+        if num_bitplanes > 1024:
+            raise RuntimeError(
+                ("These settings will generate {} "
+                 "bitplanes which is more than 1024").format(num_bitplanes)
+            )
+        else:
+            print("Generating {} bitplanes".format(num_bitplanes))
+        # For the current microscope we can only have one set of orientation
+        if norientations == 3:
+            init_angle = np.deg2rad(11.6)
+        elif norientations == 5:
+            init_angle = np.deg2rad(9.0)
+        elif norientations == 7:
+            init_angle = np.deg2rad(0.9)
+        else:
+            raise RuntimeError("number of orientations not valid, ",
+                               norientations)
+        self.angles = make_angles(init_angle, norientations)
+        # once we have all this info we can start making bitplanes
+        self.make_bitplanes()
+        # add a blank bit plane
+        self.rep.addRO(RunningOrder(
+            "Blank", Frame(self.seq, self.blank_bitplane, True, False)
+        ))
+
+    def make_bitplanes(self):
+        """
+        Function that returns a dictionary of dictionary of bitplanes
+        of BitPlanes
+        """
+        # first level is wl
+        self.bitplanes = {wl: {
+            na: [
+                [BitPlane(pattern(ang, ideal_period(wl, na), phi, onfrac=self.onfrac),
+                          _gen_name(ang, wl, na, n, self.onfrac))
+                 for n, phi in enumerate(self.phases)] for ang in self.angles]
+            for na in self.nas
+        } for wl in self.wls}
+
+    def make_ROs(self):
+        raise NotImplementedError
+
+    @property
+    def name(self):
+        return self.rep.name
+
+    def _write_all(self, path=""):
+        """Write the internal repertoire to a repz11 file"""
+        print("Writing .repz11")
+        self.rep.write_repz11(path)
+
+    def __call__(self, path=""):
+        """Do everything and write it out"""
+        self.make_ROs()
+        self._write_all(path)
+
+
+class SIMRepertoire(ExptRepertoire):
     """
     A class that takes care of the actual generation of images
 
@@ -327,24 +430,11 @@ class SIMRepertoire(object):
             you need. Useful for when extra orders aren't required (No NL)
             or when you want to restrict the number of extra phases.
         """
-        # we have one sequence for now
-        self.seq = seq
-        # save ndirs
-        self.ndirs = norientations
-        # make new internal Repertoire to hold everything.
-        self.rep = Repertoire(name)
-        # what wavelengths to try
-        self.wls = tuplify(wls)
-        # what na's to try
-        self.nas = tuplify(nas)
         # what non-linear orders to try
         self.orders = tuplify(orders)
         if min(self.orders) < 1:
             raise RuntimeError("Orders less than 0")
         self.repeats = super_repeats
-        # for now hard code, we have to double the phases
-        # so we can do 90 deg phase stepping.
-        self.onfrac = onfrac
         self.do_nl = doNL
         if SIM_2D:
             # Then we only want to take steps of 2pi/n in illumination which
@@ -364,49 +454,14 @@ class SIMRepertoire(object):
             self.nphases *= super_mult
         print("number of phases =", self.nphases)
         # calculate actual phases
-        self.phases = [(n / self.nphases / phase_step) * (2 * pi)
+        phases = [(n / self.nphases / phase_step) * (2 * pi)
                        for n in range(self.nphases)]
         # if we're doing nonlinear, add flipped patterns
         if max(self.orders) > 1 and self.do_nl:
             print("generating non-linear phases")
-            self.phases += list(np.array(self.phases) + pi / 2)
-        # make sure the proposed repertoire will fit
-        num_bitplanes = len(self.nas)
-        num_bitplanes *= len(self.wls)
-        num_bitplanes *= norientations
-        # all phases will be used for super-NL running order
-        num_bitplanes *= len(self.phases) # // (1 + self.do_nl) +
-                          # self.do_nl * (2 * np.sum(self.orders[1:]) +
-                          #               len(self.orders[1:]))
-        # if max(self.orders) > 1:
-        #     # for non-linear phase switching
-        #     num_bitplanes *= 2
-        # for the all angles and blank patterns.
-        num_bitplanes += len(self.wls) + 1
-        if num_bitplanes > 1024:
-            raise RuntimeError(
-                ("These settings will generate {} "
-                 "bitplanes which is more than 1024").format(num_bitplanes)
-            )
-        else:
-            print("Generating {} bitplanes".format(num_bitplanes))
-        # For the current microscope we can only have one set of orientation
-        if norientations == 3:
-            init_angle = np.deg2rad(11.6)
-        elif norientations == 5:
-            init_angle = np.deg2rad(9.0)
-        elif norientations == 7:
-            init_angle = np.deg2rad(0.9)
-        else:
-            raise RuntimeError("number of orientations not valid, ",
-                               norientations)
-        self.angles = make_angles(init_angle, norientations)
-        # once we have all this info we can start making bitplanes
-        self.make_bitplanes()
-        # add a blank bit plane
-        self.rep.addRO(RunningOrder(
-            "Blank", Frame(self.seq, self.blank_bitplane, True, False)
-        ))
+            phases += list(np.array(phases) + pi / 2)
+        # initialize the parent class
+        super().__init__(name, wls, nas, phases, norientations, seq, onfrac)
         # add bitplane with timing
         self.blankwtiming = [
             Frame(self.seq, self.blank_bitplane, False, True),
@@ -418,24 +473,6 @@ class SIMRepertoire(object):
         RO405.nphases = 1
         RO405.linear = True
         self.rep.addRO(RO405)
-
-    def clear_rep(self):
-        # make new internal Repertoire to hold everything.
-        self.rep = Repertoire(self.name)
-
-    def make_bitplanes(self):
-        """
-        Function that returns a dictionary of dictionary of bitplanes
-        of BitPlanes
-        """
-        # first level is wl
-        self.bitplanes = {wl: {
-            na: [
-                [BitPlane(pattern(ang, ideal_period(wl, na), phi, onfrac=self.onfrac),
-                          gen_name(ang, wl, na, n, self.onfrac))
-                 for n, phi in enumerate(self.phases)] for ang in self.angles]
-            for na in self.nas
-        } for wl in self.wls}
 
     def make_ROs(self):
         """
@@ -548,18 +585,13 @@ class SIMRepertoire(object):
         self.rep.addRO(RunningOrder(RO_name, frame))
         print('Generating "' + RO_name + '"')
 
-    @property
-    def name(self):
-        return self.rep.name
-
-    def write(self, path=""):
+    def _write_all(self, path=""):
         """Write the internal repertoire to a repz11 file"""
-        print("Writing .repz11")
-        self.rep.write_repz11(path)
+        super()._write_all(path)
         print("Writing .ini")
-        self.write_ini(path)
+        self._write_ini(path)
 
-    def write_ini(self, path):
+    def _write_ini(self, path):
         """Method to write the INI file for LabVIEW"""
         # pull rep out for ease of use
         rep = self.rep
@@ -631,13 +663,8 @@ class SIMRepertoire(object):
                 for phase_bp in tuplify(phase_list)
                 for looped in (False, True)]
 
-    def __call__(self, path=""):
-        """Do everything an write it out"""
-        self.make_ROs()
-        self.write(path)
 
-
-def gen_name(angle, wl, na, n, onfrac):
+def _gen_name(angle, wl, na, n, onfrac):
     """
     Generate a unique name for a BitPlane
     """
