@@ -221,7 +221,13 @@ class ExptRepertoire(object):
     This is _not_ a subclass of slm.Repertoire, but does hold an instance
     """
 
+    # this one is for NL SIM
     blank_bitplane = BitPlane(np.zeros((1536, 2048), dtype=bool), "Blank")
+
+    blank_RO = RunningOrder(
+            "Blank",
+            Frame(seq_24_50ms, BitPlane24(np.zeros((24, 1536, 2048), dtype=bool), "Blank"), True, False)
+        )
 
     def __init__(self, name, wls, nas, phases, norientations, seq, onfrac=0.5):
         """
@@ -285,9 +291,7 @@ class ExptRepertoire(object):
         # once we have all this info we can start making bitplanes
         self.make_bitplanes()
         # add a blank bit plane
-        self.rep.addRO(RunningOrder(
-            "Blank", Frame(self.seq, self.blank_bitplane, True, False)
-        ))
+        self.rep.addRO(self.blank_RO)
 
     def make_bitplanes(self):
         """
@@ -666,10 +670,12 @@ class PALMRepertoire(ExptRepertoire):
     """Subclass of ExptRepertoire to generate reps for PALM
 
     The problem we're having is that we're burning the objectives
-    by spinning things around in the back pupil or spreading the 
+    by spinning things around in the back pupil or spreading the
     energy out can we avoid this ..."""
 
-    def __init__(self, name, wls, nas, seq1bit, seq24bit):
+    # make a 24 bit  bitplane for blanking
+
+    def __init__(self, name, wls, nas, seq):
         """
         Parameters
         ----------
@@ -684,19 +690,16 @@ class PALMRepertoire(ExptRepertoire):
         seq24bit : slm.Sequence object
             the sequence for the 24 bit images
         """
-        if not (seq24bit is seq_24_1ms or seq24bit is seq_24_50ms):
+        if not (seq is seq_24_1ms or seq is seq_24_50ms):
             raise ValueError("Must use a 24 bit sequence")
-        self.seq24bit = seq24bit
         # for now we're going to assume we're using a 3 phase mask (makes for even divsion)
         # assuming that we're only doing two beams
         phase_step = 2
         nphases = 8
         onfrac = 0.5
         # we want 8 phases
-        phases = [(n / nphases / phase_step) * (2 * pi)
-               for n in range(8)]
-        super().__init__(name, wls, nas, phases, 3, seq1bit, onfrac)
-
+        phases = [(n / nphases / phase_step) * (2 * pi) for n in range(8)]
+        super().__init__(name, wls, nas, phases, 3, seq, onfrac)
 
     def make_ROs(self):
         """
@@ -720,7 +723,7 @@ class PALMRepertoire(ExptRepertoire):
         # make a 24-bit bitplane and single frame
         bp24 = BitPlane24(data_stack, RO_name.replace(" ", "-"))
         # looping without triggering
-        frame = Frame(self.seq24bit, bp24, True, False)
+        frame = Frame(self.seq, bp24, True, False)
         # make and add the RO
         RO = RunningOrder(RO_name, frame)
         self.rep.addRO(RO)
@@ -728,13 +731,15 @@ class PALMRepertoire(ExptRepertoire):
     def gen_palms_6(self, wl, na, angle_list):
         """Makes a RunningOrder to display all angles at once"""
         # make an array of the first phase of the data
-        RO_name = ("{} nm ".format(wl) +
+        RO_name = (
+            "{} nm ".format(wl) +
             "{:.2f} NA ".format(na) +
-            "6 Beam PALM")
+            "6 Beam PALM"
+        )
         print('Generating "' + RO_name + '"')
         # make an array of all the bitplanes (ordered as angle x phase)
         data_array = np.array([
-            [phase_bp.image for phase_bp in angle] for angle in angle_list 
+            [phase_bp.image for phase_bp in angle] for angle in angle_list
         ])
         # set up container
         angle_bp_list = []
@@ -751,7 +756,7 @@ class PALMRepertoire(ExptRepertoire):
         # make a new 24-bit plane
         bp24 = BitPlane24(np.concatenate(angle_bp_list), RO_name.replace(" ", "-"))
         # looping without triggering
-        frame = Frame(self.seq24bit, bp24, True, False)
+        frame = Frame(self.seq, bp24, True, False)
         # make and add the RO
         RO = RunningOrder(RO_name, frame)
         self.rep.addRO(RO)
