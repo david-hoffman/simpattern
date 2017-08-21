@@ -395,6 +395,7 @@ class BitPlane24(BitPlane):
         # we want unique names
         return 24
 
+
 def _24_bit_to_RGB(stack):
     """Converts a stack of single bit images to an rgb image
     such that the final image bits are ordered as:
@@ -402,14 +403,18 @@ def _24_bit_to_RGB(stack):
 
     Note
     ----
-    np.arange(24).reshape(3, -1)[::-1].T.ravel() gives the above ordering.
+    test = np.arange(24).reshape(3, 8)[::-1].T.ravel() gives the above ordering.
+    test.reshape(8, 3).T[::-1].ravel() undoes the scramble
+
     """
     # convert to bool to make sure we have "bits" and reshape so that we have
     # "columns" of bits
     stack24 = stack.astype(bool).reshape((8, 3) + stack.shape[1:])
+    stack24 = np.swapaxes(stack24, 0, 1)[::-1]
     # make a bit array to multiply our columns by
     bits = 2 ** np.arange(8)
     # reverse our columns (i.e. flip position 0 and 7 etc.)
-    stackRGB = (stack24[::-1] * bits[:, None, None, None]).sum(0).astype(np.uint8)
+    stackRGB = (stack24 * bits[None, :, None, None]).sum(1)
+    assert stackRGB.max() < 256
     # Roll axis so its compatible with images.
-    return np.rollaxis(stackRGB, 0, 3)
+    return np.rollaxis(stackRGB, 0, 3).astype(np.uint8)
