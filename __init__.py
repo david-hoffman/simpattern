@@ -706,8 +706,8 @@ class PALMRepertoire(ExptRepertoire):
         Sub-method that makes the running orders and adds them to the
         Repertoire.
         """
-        for wl, na_dict in self.bitplanes.items():
-            for na, angle_list in na_dict.items():
+        for wl, na_dict in sorted(self.bitplanes.items()):
+            for na, angle_list in sorted(na_dict.items()):
                 self.gen_palms_2(wl, na, angle_list)
                 self.gen_palms_6(wl, na, angle_list)
 
