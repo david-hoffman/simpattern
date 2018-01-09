@@ -1,0 +1,161 @@
+; this is the one that matters!
+[Line0]
+Frequency=151.479
+WaveLength=405
+Power=22.5
+MaxPower=22.5
+Title=405 nm
+; starting 488 patterns
+[Line1]
+Frequency=130.202
+WaveLength=488
+Power=16.7
+MaxPower=16.7
+Title=488 nm Blank
+[Line2]
+Frequency=130.202
+WaveLength=488
+Power=16.7
+MaxPower=16.7
+Title=488 nm All
+[Line3]
+Frequency=130.202
+WaveLength=488
+Power=16.7
+MaxPower=16.7
+Title=488 nm SIM 0
+[Line4]
+Frequency=130.202
+WaveLength=488
+Power=16.7
+MaxPower=16.7
+Title=488 nm SIM 1
+[Line5]
+Frequency=130.202
+WaveLength=488
+Power=16.7
+MaxPower=16.7
+Title=488 nm SIM 2
+; [Line?]
+; Frequency=130.202
+; WaveLength=488
+; Power=16.7
+; MaxPower=16.7
+; Title=488 nm PALM
+; starting 532 patterns
+[Line6]
+Frequency=115.488
+WaveLength=532
+Power=18
+MaxPower=18
+Title=532 nm Blank
+[Line7]
+Frequency=115.488
+WaveLength=532
+Power=18
+MaxPower=18
+Title=532 nm All
+[Line8]
+Frequency=115.488
+WaveLength=532
+Power=18
+MaxPower=18
+Title=532 nm SIM 0
+[Line9]
+Frequency=115.488
+WaveLength=532
+Power=18
+MaxPower=18
+Title=532 nm SIM 1
+[Line10]
+Frequency=115.488
+WaveLength=532
+Power=18
+MaxPower=18
+Title=532 nm SIM 2
+; [Line?]
+; Frequency=115.488
+; WaveLength=532
+; Power=18
+; MaxPower=18
+; Title=532 nm PALM
+; starting 561 patterns
+[Line11]
+Frequency=108
+WaveLength=560
+Power=20
+MaxPower=20
+Title=561 nm Blank
+[Line12]
+Frequency=108
+WaveLength=560
+Power=20
+MaxPower=20
+Title=561 nm All
+[Line13]
+Frequency=108
+WaveLength=560
+Power=20
+MaxPower=20
+Title=561 nm SIM 0
+[Line14]
+Frequency=108
+WaveLength=560
+Power=20
+MaxPower=20
+Title=561 nm SIM 1
+[Line15]
+Frequency=108
+WaveLength=560
+Power=20
+MaxPower=20
+Title=561 nm SIM 2
+; [Line?]
+; Frequency=108
+; WaveLength=560
+; Power=20
+; MaxPower=20
+; Title=561 nm PALM
+; Starting 642 patterns
+[Line16]
+Frequency=90.985
+WaveLength=642
+Power=20.5
+MaxPower=20.5
+Title=642 nm Blank
+[Line17]
+Frequency=90.985
+WaveLength=642
+Power=20.5
+MaxPower=20.5
+Title=642 nm All
+[Line18]
+Frequency=90.985
+WaveLength=642
+Power=20.5
+MaxPower=20.5
+Title=642 nm SIM 0
+[Line19]
+Frequency=90.985
+WaveLength=642
+Power=20.5
+MaxPower=20.5
+Title=642 nm SIM 1
+[Line20]
+Frequency=90.985
+WaveLength=642
+Power=20.5
+MaxPower=20.5
+Title=642 nm SIM 2
+; [Line?]
+; Frequency=90.985
+; WaveLength=642
+; Power=20.5
+; MaxPower=20.5
+; Title=642 nm PALM
+[Line21]
+Frequency=151.980
+WaveLength=445
+Power=22.5
+MaxPower=22.5
+Title=445 nm
