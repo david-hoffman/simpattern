@@ -28,6 +28,9 @@ from .slm import (Sequence, Repertoire, RunningOrder, Frame,
 # define pi for later use
 pi = np.pi
 
+# define QXGA shape
+QXGA_shape = (1536, 2048)
+
 # define local sequences, for easy acces
 seq_home = os.path.join(os.path.dirname(__file__), "HHMI_R11_Seq", "")
 seq_10ms = Sequence(seq_home + "48070 HHMI 10ms.seq11")
@@ -40,9 +43,36 @@ seq_1ms_LB = Sequence(seq_home + "48083 HHMI 1ms 1-bit Lit Balanced.seq11")
 seq_2ms_LB = Sequence(seq_home + "48084 HHMI 2ms 1-bit Lit Balanced.seq11")
 
 
-def pattern(angle, period, phi=0, onfrac=0.5, shape=(1536, 2048)):
-    '''
-    Generates a binary SLM pattern for SIM by generating a 2D sine wave
+mcf = {
+    405: {
+        "frequency": 151.479,
+        "maxpower": 22.5
+    },
+    445: {
+        "frequency": 151.980,
+        "maxpower": 22.4
+    },
+    488: {
+        "frequency": 130.202,
+        "maxpower": 16.7
+    },
+    532: {
+        "frequency": 115.488,
+        "maxpower": 18.0
+    },
+    561: {
+        "frequency": 108.000,
+        "maxpower": 20.0
+    },
+    642: {
+        "frequency": 90.985,
+        "maxpower": 20.5
+    }
+}
+
+
+def pattern(angle, period, phi=0, onfrac=0.5, shape=QXGA_shape):
+    """Generates a binary SLM pattern for SIM by generating a 2D sine wave
     and binarizing it
 
     Parameters
@@ -62,7 +92,7 @@ def pattern(angle, period, phi=0, onfrac=0.5, shape=(1536, 2048)):
     -------
     pattern : ndarray
         A binary array representing a single bitplane to send to the SLM
-    '''
+    """
     if not 0 < onfrac < 1:
         raise ValueError(('onfrac must have a value between'
                           ' 0 and 1. onfrac = {}').format(onfrac))
@@ -84,8 +114,7 @@ def pattern(angle, period, phi=0, onfrac=0.5, shape=(1536, 2048)):
 
 
 def localize_peak(data):
-    """
-    Small utility function to localize a peak center. Assumes passed data has
+    """Small utility function to localize a peak center. Assumes passed data has
     peak at center and that data.shape is odd and symmetric. Then fits a
     parabola through each line passing through the center. This is optimized
     for FFT data which has a non-circularly symmetric shaped peaks.
@@ -117,9 +146,7 @@ def localize_peak(data):
 
 
 def pattern_params(my_pat, size=2):
-    '''
-    Find stuff
-    '''
+    """Find stuff"""
     # REAL FFT!
     # note the limited shifting, we don't want to shift the last axis
     my_pat_fft = fftshift(rfftn(ifftshift(my_pat)),
@@ -157,9 +184,7 @@ def pattern_params(my_pat, size=2):
 
 
 def opt_period(iperiod, angle, **kwargs):
-    """
-    Optimize actual period
-    """
+    """Optimize actual period"""
     def objf_l1(period):
         calc_period = pattern_params(angle, period, **kwargs)['period']
         return abs(calc_period - iperiod)
@@ -167,9 +192,7 @@ def opt_period(iperiod, angle, **kwargs):
 
 
 def opt_angle(period, iangle, **kwargs):
-    """
-    Optimize angle
-    """
+    """Optimize angle"""
     def objf_l1(angle):
         calc_angle = pattern_params(angle, period, **kwargs)['angle']
         return abs(calc_angle - iangle)
@@ -177,17 +200,13 @@ def opt_angle(period, iangle, **kwargs):
 
 
 def make_angles(init_angle, num_angles):
-    """
-    Make a list of angles
-    """
+    """Make a list of angles"""
     thetas = np.arange(0., num_angles) * pi / 1. / num_angles + init_angle
     return thetas
 
 
 def ideal_period(wavelength, na=0.85):
-    '''
-    Wavelength is in nm
-    '''
+    """Wavelength is in nm"""
     # all other units in mm
     # pixel size in mm for QXGA display (4DD)
     pixel_size = 8.2 / 1000
@@ -215,18 +234,17 @@ def ideal_period(wavelength, na=0.85):
 
 
 class ExptRepertoire(object):
-    """
-    A class that takes care of the actual generation of images
+    """A class that takes care of the actual generation of images
 
     This is _not_ a subclass of slm.Repertoire, but does hold an instance
     """
 
     # this one is for NL SIM
-    blank_bitplane = BitPlane(np.zeros((1536, 2048), dtype=bool), "Blank")
+    blank_bitplane = BitPlane(np.zeros(QXGA_shape, dtype=bool), "Blank")
 
     blank_RO = RunningOrder(
             "Blank",
-            Frame(seq_24_50ms, BitPlane24(np.zeros((24, 1536, 2048), dtype=bool), "Blank"), True, False)
+            Frame(seq_24_50ms, BitPlane24(np.zeros((24,) + QXGA_shape, dtype=bool), "Blank"), True, False)
         )
 
     def __init__(self, name, wls, nas, phases, norientations, seq, onfrac=0.5):
@@ -294,8 +312,7 @@ class ExptRepertoire(object):
         self.rep.addRO(self.blank_RO)
 
     def make_bitplanes(self):
-        """
-        Function that returns a dictionary of dictionary of bitplanes
+        """Function that returns a dictionary of dictionary of bitplanes
         of BitPlanes
         """
         # first level is wl
@@ -326,8 +343,7 @@ class ExptRepertoire(object):
 
 
 class SIMRepertoire(ExptRepertoire):
-    """
-    A class that takes care of the actual generation of images
+    """A class that takes care of the actual generation of images
 
     This is _not_ a subclass of slm.Repertoire, but does hold an instance
     """
@@ -477,8 +493,7 @@ class SIMRepertoire(ExptRepertoire):
         self.rep.addRO(RO405)
 
     def make_ROs(self):
-        """
-        Sub-method that makes the running orders and adds them to the
+        """Sub-method that makes the running orders and adds them to the
         Repertoire.
         """
         for wl, na_dict in self.bitplanes.items():
@@ -487,9 +502,7 @@ class SIMRepertoire(ExptRepertoire):
                 self.gen_all_angles(wl, na, angle_list)
 
     def gen_sims(self, wl, na, angle_list):
-        """
-        Do linear and nonlinear SIMs here
-        """
+        """Do linear and nonlinear SIMs here"""
         # define the naming convention for ROs
         name_str = ("{} nm ".format(wl) +
                     "{} phases " +
@@ -655,8 +668,7 @@ class SIMRepertoire(ExptRepertoire):
                     pass
 
     def make_sim_frame_list(self, series):
-        """
-        Utility function that interleaves a list of bitplanes
+        """Utility function that interleaves a list of bitplanes
         such that there's one single triggered version followed
         by a looped version that has a triggered ending.
         """
@@ -672,8 +684,6 @@ class PALMRepertoire(ExptRepertoire):
     The problem we're having is that we're burning the objectives
     by spinning things around in the back pupil or spreading the
     energy out can we avoid this ..."""
-
-    # make a 24 bit  bitplane for blanking
 
     def __init__(self, name, wls, nas, seq):
         """
@@ -702,8 +712,7 @@ class PALMRepertoire(ExptRepertoire):
         super().__init__(name, wls, nas, phases, 3, seq, onfrac)
 
     def make_ROs(self):
-        """
-        Sub-method that makes the running orders and adds them to the
+        """Sub-method that makes the running orders and adds them to the
         Repertoire.
         """
         for wl, na_dict in sorted(self.bitplanes.items()):
@@ -763,9 +772,7 @@ class PALMRepertoire(ExptRepertoire):
 
 
 def _gen_name(angle, wl, na, n, onfrac):
-    """
-    Generate a unique name for a BitPlane
-    """
+    """Generate a unique name for a BitPlane"""
     degree = np.rad2deg(angle)
     my_per = ideal_period(wl, na)
     name = 'pat-{}nm-{:.2f}NA{:+.1f}deg-{:02d}ph-{:.4f}pix-{:.2f}DC'
