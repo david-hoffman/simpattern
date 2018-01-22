@@ -188,17 +188,19 @@ class Repertoire(object):
             int_result.append("({},{}) ".format(seq_dict[seq], bp_dict[bp]))
 
         if frame.looped:
-            result = [" {"]
-            if frame.triggered:
-                result += ["f "]
-            result += int_result + ["}"]
+            if frame.finish_signal:
+                start = [" {f "]
+            else:
+                start = [" {"]
+            end = ["}"]
         else:
-            result = [" <"]
-            if frame.triggered:
-                result += ["t"]
-            result += int_result + [">"]
+            start = [" <"]
+            end = [">"]
 
-        return "".join(result)
+        if frame.triggered:
+            start = start + ["t"]
+        
+        return "".join(start + int_result + end)
 
     def write_repz11(self, path=""):
         """
@@ -270,16 +272,34 @@ class Frame(object):
     """
     # for now there will be two types of Frames, looped and unlooped
 
-    def __init__(self, sequences, bitplanes, looped, triggered):
+    def __init__(self, sequences, bitplanes, looped, triggered, finish_signal):
         self.looped = looped
         self.triggered = triggered
+        self.finish_signal = finish_signal
+
+        assert not (self.finish_signal and not self.looped), "Cannot have a finish signal without a loop"
+        
         tsequences = tuplify(sequences)
         tbitplanes = tuplify(bitplanes)
+        
         assert len(tsequences) == len(tbitplanes), ("Number of bitplanes does"
                                                     " not equal number of"
                                                     " sequences!")
         self.sequences = tsequences
         self.bitplanes = tbitplanes
+
+
+class FrameGroup(object):
+    """
+    A FrameGroup is a combination of a sequence and a bitplane and 
+    whether or not it's triggered or not.
+    """
+
+    # could just use a named tuple here.
+    def __init__(self, sequence, bitplane, triggered):
+        self.sequence, self.bitplane, self.triggered = sequence, bitplane, triggered
+        raise NotImplementedError
+
 
 
 class Sequence(object):

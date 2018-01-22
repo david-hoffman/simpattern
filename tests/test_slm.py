@@ -153,9 +153,16 @@ class TestFrame(unittest.TestCase):
         self.bp2 = BitPlane(self.data2)
 
     def test_seq_bp(self):
-        "Assertion error thrown for unequal number of sequences and bitplanes"
+        """Assertion error thrown for unequal number of sequences and bitplanes"""
         assert_raises(AssertionError, Frame, (self.seq1, ),
-                      (self.bp1, self.bp2), True, False)
+                      (self.bp1, self.bp2), True, False, False)
+
+    def test_frame_loop(self):
+        """Assertion error if not looping and finish signal only"""
+        Frame(self.seq1, self.bp1, False, True, False)
+        Frame(self.seq1, self.bp1, True, True, False)
+        Frame(self.seq1, self.bp1, True, True, True)
+        assert_raises(AssertionError, Frame, self.seq1, self.bp1, False, True, True)
 
 
 class TestRepertoire(unittest.TestCase):
@@ -176,9 +183,9 @@ class TestRepertoire(unittest.TestCase):
         self.bp1 = BitPlane(self.data1)
         self.bp2 = BitPlane(self.data2)
         self.frame1 = Frame((self.seq1, self.seq2), (self.bp1, self.bp2),
-                       True, False)
-        self.frame2 = Frame((self.seq1, ), (self.bp1, ), True, False)
-        self.frame3 = Frame((self.seq1, ), (self.bp1, ), False, False)
+                       True, False, False)
+        self.frame2 = Frame((self.seq1, ), (self.bp1, ), True, False, False)
+        self.frame3 = Frame((self.seq1, ), (self.bp1, ), False, False, False)
         self.RO1 = RunningOrder("Dummy Frame", (self.frame1, self.frame2, self.frame3))
         self.RO2 = RunningOrder("Dummy Frame2", (self.frame1, ))
         self.rep = Repertoire("Dummy", (self.RO1, self.RO2))
@@ -199,7 +206,7 @@ class TestRepertoire(unittest.TestCase):
         seq3 = Sequence(seq3_path)
         data3 = np.random.randint(2, size=(512, 512))
         bp3 = BitPlane(data3)
-        frame = Frame((seq3, ), (bp3, ), True, False)
+        frame = Frame((seq3, ), (bp3, ), True, False, False)
         RO3 = RunningOrder("Testy", (frame, ))
         self.rep.addRO(RO3)
         assert_in(bp3, self.rep.bitplanes)
@@ -240,7 +247,7 @@ class TestRepertoire(unittest.TestCase):
         """
         Testing the frames are put out right
         """
-        frame = Frame((self.seq1, self.seq1), (self.bp1, self.bp1), True, True)
+        frame = Frame((self.seq1, self.seq1), (self.bp1, self.bp1), True, False, True)
         RO = RunningOrder("test_write_frame", (frame, ))
         rep = Repertoire("Dummy rep", (RO,))
         rep.prep_bp_for_write()
@@ -252,7 +259,7 @@ class TestRepertoire(unittest.TestCase):
         """
         Testing the frames are put out right
         """
-        frame = Frame((self.seq1, self.seq1), (self.bp1, self.bp1), True, True)
+        frame = Frame((self.seq1, self.seq1), (self.bp1, self.bp1), True, False, True)
         RO = RunningOrder("test_write_frame", (frame, ))
         rep = Repertoire("Dummy rep", (RO,))
         rep.prep_bp_for_write()
@@ -261,10 +268,8 @@ class TestRepertoire(unittest.TestCase):
         assert_equals(test_str, rep.write_RO(RO))
 
     def test_write_rep(self):
-        """
-        Testing the rep is put out right
-        """
-        frame = Frame((self.seq1, self.seq1), (self.bp1, self.bp1), True, True)
+        """Testing the rep is put out right"""
+        frame = Frame((self.seq1, self.seq1), (self.bp1, self.bp1), True, False, True)
         RO = RunningOrder("test_write_frame", (frame, ))
         rep = Repertoire("Dummy rep", (RO,))
         test_str = 'SEQUENCES\nA "' + self.seq1.name + '"\nSEQUENCES_END\n\n'
@@ -278,8 +283,6 @@ class TestRepertoire2(unittest.TestCase):
     Testing functionality of BitPlane class
     """
 
-    maxDiff = None
-
     def setUp(self):
         """
         Set up some dummy sequences and bitplanes
@@ -292,6 +295,7 @@ class TestRepertoire2(unittest.TestCase):
         """
         Do we match the test file?
         """
+        self.maxDiff = None
         seqA = Sequence(path_to_seq1)
         seqB = Sequence(path_to_seq2)
         bp_names = [
@@ -310,15 +314,17 @@ class TestRepertoire2(unittest.TestCase):
         bp_list = [BitPlane(np.random.randint(2, size=(512, 512)), name)
                    for name in bp_names]
 
-        RO0_frames = [Frame((seqA,), (bp, ), looped, True)
+        RO0_frames = [Frame((seqA,), (bp, ), looped, not looped, looped)
                       for bp in bp_list[:5]
                       for looped in (False, True)]
-        RO1_frames = [Frame((seqA,), (bp, ), looped, True)
+        RO1_frames = [Frame((seqA,), (bp, ), looped, not looped, looped)
                       for bp in bp_list[5:-1]
                       for looped in (False, True)]
-        RO2_frames = [Frame((seqB, seqB, seqB), bp_list[::5], True, False)]
+        RO2_frames = [Frame((seqB, seqB, seqB), bp_list[::5], True, False, False)]
         RO0 = RunningOrder("NA 0.85 5 phases 1 angle", RO0_frames)
         RO1 = RunningOrder("NA 0.80 5 phases 1 angle", RO1_frames)
         RO2 = RunningOrder("NA 0.85 3 angles no trig", RO2_frames)
         rep = Repertoire("test_rep", (RO0, RO1, RO2))
+        print(str(rep))
+        print(self.strcmp)
         assert_equals(str(rep), self.strcmp)

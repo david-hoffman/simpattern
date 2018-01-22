@@ -161,7 +161,7 @@ def pattern_params(my_pat, size=2):
     my_abs_pat_fft[dc_loc] = 0
     max_loc = np.unravel_index(my_abs_pat_fft.argmax(), my_abs_pat_fft.shape)
     # pull the 3x3 region around the peak and fit
-    max_shift = localize_peak(my_abs_pat_fft[slice_maker(*max_loc, width=3)])
+    max_shift = localize_peak(my_abs_pat_fft[slice_maker(max_loc, 3)])
     # calculate precise peak relative to dc
     peak = np.array(max_loc) + np.array(max_shift) - np.array(dc_loc)
     # correct location based on initial data shape
@@ -173,7 +173,7 @@ def pattern_params(my_pat, size=2):
     # calc phase
     phase = np.angle(my_pat_fft[max_loc[0], max_loc[1]])
     # calc modulation depth
-    numerator = abs(my_pat_fft[slice_maker(*max_loc, width=size)].sum())
+    numerator = abs(my_pat_fft[slice_maker(max_loc, size)].sum())
     mod = numerator / dc_power
     return {"period": precise_period,
             "angle": preciseangle,
@@ -244,7 +244,7 @@ class ExptRepertoire(object):
 
     blank_RO = RunningOrder(
             "Blank",
-            Frame(seq_24_50ms, BitPlane24(np.zeros((24,) + QXGA_shape, dtype=bool), "Blank"), True, False)
+            Frame(seq_24_50ms, BitPlane24(np.zeros((24,) + QXGA_shape, dtype=bool), "Blank"), True, False, False)
         )
 
     def __init__(self, name, wls, nas, phases, norientations, seq, onfrac=0.5):
@@ -482,8 +482,8 @@ class SIMRepertoire(ExptRepertoire):
         super().__init__(name, wls, nas, phases, norientations, seq, onfrac)
         # add bitplane with timing
         self.blankwtiming = [
-            Frame(self.seq, self.blank_bitplane, False, True),
-            Frame(self.seq, self.blank_bitplane, True, True)
+            Frame(self.seq, self.blank_bitplane, False, True, False),
+            Frame(self.seq, self.blank_bitplane, True, False, True)
         ]
 
         RO405 = RunningOrder("405 nm WF", self.blankwtiming)
@@ -551,10 +551,10 @@ class SIMRepertoire(ExptRepertoire):
                     continue
                 print('Generating "' + RO_name + '"')
                 frames = [
-                    Frame(self.seq, phase_bp, looped, True)
+                    Frame(self.seq, phase_bp, looped, triggered, finish)
                     for series in series_list
                     for phase_bp in series
-                    for looped in (False, True)
+                    for looped, triggered, finish in zip((False, True), (True, False), (False, True))
                 ]
                 if ext_str == "React ":
                     frames += self.blankwtiming
@@ -578,7 +578,7 @@ class SIMRepertoire(ExptRepertoire):
             RO_name = name_str.format(
                 1, "{:.1f} angle".format(np.rad2deg(angle)))
             self.rep.addRO(RunningOrder(
-                RO_name, Frame(self.seq, phase_list[0], True, False)))
+                RO_name, Frame(self.seq, phase_list[0], True, False, False)))
             print('Generating "' + RO_name + '"')
 
     def gen_all_angles(self, wl, na, angle_list):
@@ -595,7 +595,7 @@ class SIMRepertoire(ExptRepertoire):
         # generate bitplane
         all_angles_bitplane = BitPlane(bitplane, bp_name)
         # generate Frame
-        frame = Frame(self.seq, all_angles_bitplane, True, False)
+        frame = Frame(self.seq, all_angles_bitplane, True, False, False)
         # make RO and add to list
         self.rep.addRO(RunningOrder(RO_name, frame))
         print('Generating "' + RO_name + '"')
@@ -672,10 +672,10 @@ class SIMRepertoire(ExptRepertoire):
         such that there's one single triggered version followed
         by a looped version that has a triggered ending.
         """
-        return [(self.seq, phase_bp, looped, True)
+        return [(self.seq, phase_bp, looped, triggered, finish)
                 for phase_list in tuplify(series)
                 for phase_bp in tuplify(phase_list)
-                for looped in (False, True)]
+                for looped, triggered, finish in zip((False, True), (True, False), (False, True))]
 
 
 class PALMRepertoire(ExptRepertoire):
@@ -732,9 +732,11 @@ class PALMRepertoire(ExptRepertoire):
         # make a 24-bit bitplane and single frame
         bp24 = BitPlane24(data_stack, RO_name.replace(" ", "-"))
         # looping without triggering
-        frame = Frame(self.seq, bp24, True, False)
+        frame = Frame(self.seq, bp24, True, False, False)
         # make and add the RO
         RO = RunningOrder(RO_name, frame)
+        self.rep.addRO(RO)
+        RO = RunningOrder(RO_name + " triggered",  [Frame(self.seq, bp24, False, True, False), Frame(self.seq, bp24, True, True, False)])
         self.rep.addRO(RO)
 
     def gen_palms_6(self, wl, na, angle_list):
@@ -765,9 +767,11 @@ class PALMRepertoire(ExptRepertoire):
         # make a new 24-bit plane
         bp24 = BitPlane24(np.concatenate(angle_bp_list), RO_name.replace(" ", "-"))
         # looping without triggering
-        frame = Frame(self.seq, bp24, True, False)
+        frame = Frame(self.seq, bp24, True, False, False)
         # make and add the RO
         RO = RunningOrder(RO_name, frame)
+        self.rep.addRO(RO)
+        RO = RunningOrder(RO_name + " triggered",  [Frame(self.seq, bp24, False, True, False), Frame(self.seq, bp24, True, True, False)])
         self.rep.addRO(RO)
 
 

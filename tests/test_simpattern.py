@@ -123,8 +123,8 @@ class TestSIMRepertoire(unittest.TestCase):
         simrep = self.simrep
         output = simrep.make_sim_frame_list(0)
         output_true = [
-            (self.seq, 0, False, True),
-            (self.seq, 0, True, True)
+            (self.seq, 0, False, True, False),
+            (self.seq, 0, True, False, True)
         ]
         assert_equal(output, output_true)
 
@@ -136,12 +136,12 @@ class TestSIMRepertoire(unittest.TestCase):
         phase_list = (0, 1, 2)
         output = simrep.make_sim_frame_list(phase_list)
         output_true = [
-            (self.seq, 0, False, True),
-            (self.seq, 0, True, True),
-            (self.seq, 1, False, True),
-            (self.seq, 1, True, True),
-            (self.seq, 2, False, True),
-            (self.seq, 2, True, True)
+            (self.seq, 0, False, True, False),
+            (self.seq, 0, True, False, True),
+            (self.seq, 1, False, True, False),
+            (self.seq, 1, True, False, True),
+            (self.seq, 2, False, True, False),
+            (self.seq, 2, True, False, True)
         ]
         assert_equal(output, output_true)
 
@@ -155,13 +155,13 @@ class TestSIMRepertoire(unittest.TestCase):
         phase_list2 = ((1, 0), (1, 1))
         output = simrep.make_sim_frame_list(zip(phase_list1, phase_list2))
         output_true = [
-            (self.seq, (0, 0), False, True),
-            (self.seq, (0, 0), True, True),
-            (self.seq, (1, 0), False, True),
-            (self.seq, (1, 0), True, True),
-            (self.seq, (0, 1), False, True),
-            (self.seq, (0, 1), True, True),
-            (self.seq, (1, 1), False, True),
-            (self.seq, (1, 1), True, True)
+            (self.seq, (0, 0), False, True, False),
+            (self.seq, (0, 0), True, False, True),
+            (self.seq, (1, 0), False, True, False),
+            (self.seq, (1, 0), True, False, True),
+            (self.seq, (0, 1), False, True, False),
+            (self.seq, (0, 1), True, False, True),
+            (self.seq, (1, 1), False, True, False),
+            (self.seq, (1, 1), True, False, True)
         ]
         assert_equal(output, output_true)
