@@ -232,9 +232,7 @@ class TestRepertoire(unittest.TestCase):
         assert_equal(test_str, "\n".join(bp_str))
 
     def test_rep_seq_write(self):
-        """
-        Make sure the returned string is of the correct format
-        """
+        """Make sure the returned string is of the correct format"""
         test_str = self.rep.prep_seq_for_write()
         seq_str = ["SEQUENCES"]
         flip = {v: k for k, v in self.rep.seq_dict.items()}
@@ -244,15 +242,53 @@ class TestRepertoire(unittest.TestCase):
         assert_equal(test_str, "\n".join(seq_str))
 
     def test_write_frame(self):
-        """
-        Testing the frames are put out right
-        """
+        """Testing the frames are output correctly: looped, not triggered, finish signal"""
         frame = Frame((self.seq1, self.seq1), (self.bp1, self.bp1), True, False, True)
         RO = RunningOrder("test_write_frame", (frame, ))
         rep = Repertoire("Dummy rep", (RO,))
         rep.prep_bp_for_write()
         rep.prep_seq_for_write()
         test_str = " {f (A,0) (A,0) }"
+        assert_equals(test_str, rep.write_frame(frame))
+
+    def test_write_frame(self):
+        """Testing the frames are output correctly: looped, triggered, finish signal"""
+        frame = Frame((self.seq1, self.seq1), (self.bp1, self.bp1), True, True, True)
+        RO = RunningOrder("test_write_frame", (frame, ))
+        rep = Repertoire("Dummy rep", (RO,))
+        rep.prep_bp_for_write()
+        rep.prep_seq_for_write()
+        test_str = " {f t(A,0) (A,0) }"
+        assert_equals(test_str, rep.write_frame(frame))
+
+    def test_write_frame(self):
+        """Testing the frames are output correctly: not looped, triggered"""
+        frame = Frame((self.seq1, self.seq1), (self.bp1, self.bp1), False, True, False)
+        RO = RunningOrder("test_write_frame", (frame, ))
+        rep = Repertoire("Dummy rep", (RO,))
+        rep.prep_bp_for_write()
+        rep.prep_seq_for_write()
+        test_str = " <t(A,0) (A,0) >"
+        assert_equals(test_str, rep.write_frame(frame))
+
+    def test_write_frame(self):
+        """Testing the frames are output correctly: not looped, not triggered"""
+        frame = Frame((self.seq1, self.seq1), (self.bp1, self.bp1), False, False, False)
+        RO = RunningOrder("test_write_frame", (frame, ))
+        rep = Repertoire("Dummy rep", (RO,))
+        rep.prep_bp_for_write()
+        rep.prep_seq_for_write()
+        test_str = " <(A,0) (A,0) >"
+        assert_equals(test_str, rep.write_frame(frame))
+
+    def test_write_frame(self):
+        """Testing the frames are output correctly: looped, triggered, no finish"""
+        frame = Frame((self.seq1, self.seq1), (self.bp1, self.bp1), True, True, False)
+        RO = RunningOrder("test_write_frame", (frame, ))
+        rep = Repertoire("Dummy rep", (RO,))
+        rep.prep_bp_for_write()
+        rep.prep_seq_for_write()
+        test_str = " {t(A,0) (A,0) }"
         assert_equals(test_str, rep.write_frame(frame))
 
     def test_write_RO(self):
