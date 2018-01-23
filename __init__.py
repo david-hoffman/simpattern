@@ -43,7 +43,7 @@ seq_1ms_LB = Sequence(seq_home + "48083 HHMI 1ms 1-bit Lit Balanced.seq11")
 seq_2ms_LB = Sequence(seq_home + "48084 HHMI 2ms 1-bit Lit Balanced.seq11")
 
 
-mcf = {
+mcf_dict = {
     405: {
         "frequency": 151.479,
         "maxpower": 22.5
@@ -241,10 +241,17 @@ class ExptRepertoire(object):
 
     # this one is for NL SIM
     blank_bitplane = BitPlane(np.zeros(QXGA_shape, dtype=bool), "Blank")
+    blank_bitplane24 = BitPlane24(np.zeros((24,) + QXGA_shape, dtype=bool), "Blank24")
 
     blank_RO = RunningOrder(
             "Blank",
-            Frame(seq_24_50ms, BitPlane24(np.zeros((24,) + QXGA_shape, dtype=bool), "Blank"), True, False, False)
+            Frame(seq_24_50ms, blank_bitplane24, True, False, False)
+        )
+
+    blank_RO_triggered = RunningOrder(
+            "Blank Triggered",
+            [Frame(seq_24_50ms, blank_bitplane24, False, True, False),
+             Frame(seq_24_50ms, blank_bitplane24, True, True, False)]
         )
 
     def __init__(self, name, wls, nas, phases, norientations, seq, onfrac=0.5):
@@ -310,6 +317,7 @@ class ExptRepertoire(object):
         self.make_bitplanes()
         # add a blank bit plane
         self.rep.addRO(self.blank_RO)
+        self.rep.addRO(self.blank_RO_triggered)
 
     def make_bitplanes(self):
         """Function that returns a dictionary of dictionary of bitplanes
@@ -597,18 +605,21 @@ class SIMRepertoire(ExptRepertoire):
         # generate Frame
         frame = Frame(self.seq, all_angles_bitplane, True, False, False)
         # make RO and add to list
-        self.rep.addRO(RunningOrder(RO_name, frame))
+        allro = RunningOrder(RO_name, frame)
+        allro.wl = wl
+        self.rep.addRO(allro)
         print('Generating "' + RO_name + '"')
 
     def _write_all(self, path=""):
         """Write the internal repertoire to a repz11 file"""
         super()._write_all(path)
-        print("Writing .ini")
         self._write_ini(path)
+        self._write_mcf_and_tsv(path)
 
     def _write_ini(self, path):
         """Method to write the INI file for LabVIEW"""
         # pull rep out for ease of use
+        print("Writing .ini")
         rep = self.rep
         filename = os.path.join(path, rep.name + ".ini")
         # open file
@@ -666,6 +677,45 @@ class SIMRepertoire(ExptRepertoire):
                     file.write("\n\n")
                 except AttributeError:
                     pass
+
+    def _write_mcf_and_tsv(self, path=""):
+        """dfds"""
+
+        print("Writing .mcf and .tsv")
+        mcf_entry = ("[Line{num:}]\n"
+                     "Frequency={frequency:3f}\n"
+                     "WaveLength={wl:}\n"
+                     "Power={maxpower:.1f}\n"
+                     "MaxPower={maxpower:.1f}\n"
+                     "Title={title:}\n")
+
+        # iterate through ROs
+        mcfname = os.path.join(path, self.rep.name + ".mcf")
+        tsvname = os.path.join(path, self.rep.name + ".tsv")
+        abspath = os.path.abspath("")
+        with open(mcfname, 'w') as mcf, open(tsvname, 'w') as tsv:
+            for i, ro in enumerate(self.rep):
+                if "NA Linear SIM" in ro.name:
+                    # reorder frames into orientations
+                    frame_names = np.array([frame.bitplanes[0].name for frame in ro])[::2].reshape(-1, 5)
+                    for j, orient in enumerate(frame_names):
+                        # there should be 3 of these
+                        # write a line in the MCF file
+                        tsvline = "\t".join([os.path.join(abspath, self.rep.name, bp + ".bmp") for bp in orient])
+                        tsv.write(tsvline + "\n")
+                        title = ro.name + " {}".format(j)
+                        mcfline = mcf_entry.format(num="{}{}".format(i,j), wl=ro.wl, title=title, **mcf_dict[ro.wl])
+                        mcf.write(mcfline)
+                elif "All Angles" in ro.name:
+                    # Here we make blank an dall
+                    bmp1 = ro.frames[0].bitplanes[0].name + ".bmp"
+                    bmp2 = self.blank_bitplane.name + ".bmp"
+                    for name, filename in zip(("All", "Blank"), (bmp1, bmp2)):
+                        tsvline = "\t".join([os.path.join(abspath, self.rep.name, filename)] * 5)
+                        tsv.write(tsvline + "\n")
+                        title = "{} nm {}".format(ro.wl, name)
+                        mcfline = mcf_entry.format(num=i, wl=ro.wl, title=title, **mcf_dict[ro.wl])
+                        mcf.write(mcfline)
 
     def make_sim_frame_list(self, series):
         """Utility function that interleaves a list of bitplanes
@@ -728,7 +778,9 @@ class PALMRepertoire(ExptRepertoire):
             "2 Beam PALM")
         print('Generating "' + RO_name + '"')
         # expand bitplanes into stack
-        data_stack = np.array([phase_bp.image for angle in angle_list for phase_bp in angle])
+        data_stack = np.array([phase_bp.image
+            for angle in angle_list
+            for phase_bp in angle])
         # make a 24-bit bitplane and single frame
         bp24 = BitPlane24(data_stack, RO_name.replace(" ", "-"))
         # looping without triggering
@@ -736,7 +788,8 @@ class PALMRepertoire(ExptRepertoire):
         # make and add the RO
         RO = RunningOrder(RO_name, frame)
         self.rep.addRO(RO)
-        RO = RunningOrder(RO_name + " triggered",  [Frame(self.seq, bp24, False, True, False), Frame(self.seq, bp24, True, True, False)])
+        RO = RunningOrder(RO_name + " triggered",  [Frame(self.seq, bp24, False, True, False),
+            Frame(self.seq, bp24, True, True, False)])
         self.rep.addRO(RO)
 
     def gen_palms_6(self, wl, na, angle_list):
@@ -750,7 +803,8 @@ class PALMRepertoire(ExptRepertoire):
         print('Generating "' + RO_name + '"')
         # make an array of all the bitplanes (ordered as angle x phase)
         data_array = np.array([
-            [phase_bp.image for phase_bp in angle] for angle in angle_list
+            [phase_bp.image for phase_bp in angle]
+            for angle in angle_list
         ])
         # set up container
         angle_bp_list = []
@@ -771,7 +825,8 @@ class PALMRepertoire(ExptRepertoire):
         # make and add the RO
         RO = RunningOrder(RO_name, frame)
         self.rep.addRO(RO)
-        RO = RunningOrder(RO_name + " triggered",  [Frame(self.seq, bp24, False, True, False), Frame(self.seq, bp24, True, True, False)])
+        RO = RunningOrder(RO_name + " triggered", [Frame(self.seq, bp24, False, True, False),
+            Frame(self.seq, bp24, True, True, False)])
         self.rep.addRO(RO)
 
 
