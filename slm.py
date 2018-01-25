@@ -292,7 +292,7 @@ class Frame(object):
 class FrameGroup(object):
     """
     A FrameGroup is a combination of a sequence and a bitplane and 
-    whether or not it's triggered or not.
+    whether or not it's triggered.
     """
 
     # could just use a named tuple here.
@@ -336,6 +336,8 @@ class BitPlane(object):
     """BitPlanes have data (the image) and names"""
     # This class should take care of all the lowlevel tasks we may later
     # want to implement, such as loading from disk writing to disk, excetera
+
+    bitdepth = 1
 
     def __init__(self, image, name=None):
         """"""
@@ -382,15 +384,13 @@ class BitPlane(object):
         # we want unique names
         return self._name
 
-    @property
-    def bitdepth(self):
-        # we want unique names
-        return 1
-
 
 # need to subclass bitplane so that it can handle 24 bit images
 class BitPlane24(BitPlane):
     """A subclass to deal with 24 bit patterns."""
+
+    bitdepth = 24
+
     def __init__(self, images, name=None):
         """"""
         # I'm expecting a stack of images, so the z dimension should be 24
@@ -409,11 +409,6 @@ class BitPlane24(BitPlane):
         bp_img.save(output, "BMP")
         # return a bytes object
         return output.getvalue()
-
-    @property
-    def bitdepth(self):
-        # we want unique names
-        return 24
 
 
 def _24_bit_to_RGB(stack):

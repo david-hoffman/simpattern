@@ -248,12 +248,6 @@ class ExptRepertoire(object):
             Frame(seq_24_50ms, blank_bitplane24, True, False, False)
         )
 
-    blank_RO_triggered = RunningOrder(
-            "Blank Triggered",
-            [Frame(seq_24_50ms, blank_bitplane24, False, True, False),
-             Frame(seq_24_50ms, blank_bitplane24, True, True, False)]
-        )
-
     def __init__(self, name, wls, nas, phases, norientations, seq, onfrac=0.5):
         """
         Parameters
@@ -317,7 +311,6 @@ class ExptRepertoire(object):
         self.make_bitplanes()
         # add a blank bit plane
         self.rep.addRO(self.blank_RO)
-        self.rep.addRO(self.blank_RO_triggered)
 
     def make_bitplanes(self):
         """Function that returns a dictionary of dictionary of bitplanes
@@ -735,6 +728,20 @@ class PALMRepertoire(ExptRepertoire):
     by spinning things around in the back pupil or spreading the
     energy out can we avoid this ..."""
 
+
+    blank_RO_triggered = RunningOrder(
+            "Blank Triggered",
+            [Frame(seq_24_1ms, ExptRepertoire.blank_bitplane24, False, True, False),
+             Frame(seq_24_1ms, ExptRepertoire.blank_bitplane24, True, True, False)]
+        )
+
+    blank_RO_triggered_final = RunningOrder(
+            "Blank Triggered + Final",
+            [Frame(seq_24_1ms, ExptRepertoire.blank_bitplane24, False, True, False),
+             Frame(seq_24_1ms, ExptRepertoire.blank_bitplane24, True, True, True)]
+        )
+
+
     def __init__(self, name, wls, nas, seq):
         """
         Parameters
@@ -761,14 +768,26 @@ class PALMRepertoire(ExptRepertoire):
         phases = [(n / nphases / phase_step) * (2 * pi) for n in range(8)]
         super().__init__(name, wls, nas, phases, 3, seq, onfrac)
 
+        # self.rep.addRO(self.blank_RO_triggered)
+        # self.rep.addRO(self.blank_RO_triggered_final)
+
     def make_ROs(self):
         """Sub-method that makes the running orders and adds them to the
         Repertoire.
         """
         for wl, na_dict in sorted(self.bitplanes.items()):
             for na, angle_list in sorted(na_dict.items()):
-                self.gen_palms_2(wl, na, angle_list)
-                self.gen_palms_6(wl, na, angle_list)
+                for func in (self.gen_palms_2, self.gen_palms_6):
+                    RO_name, bp24 = func(wl, na, angle_list)
+                    # make and add the RO
+                    RO_looped = RunningOrder(RO_name, Frame(self.seq, bp24, True, False, False))
+                    self.rep.addRO(RO_looped)
+                    # RO_triggered = RunningOrder(RO_name + " triggered",  [Frame(self.seq, bp24, False, True, False),
+                    #     Frame(self.seq, bp24, True, True, False)])
+                    # self.rep.addRO(RO_triggered)
+                    # RO_final = RunningOrder(RO_name + " triggered + final",  [Frame(self.seq, bp24, False, True, False),
+                    #     Frame(self.seq, bp24, True, True, True)])
+                    # self.rep.addRO(RO_final)
 
     def gen_palms_2(self, wl, na, angle_list):
         """Makes a RunningOrder to display all angles at once"""
@@ -784,13 +803,7 @@ class PALMRepertoire(ExptRepertoire):
         # make a 24-bit bitplane and single frame
         bp24 = BitPlane24(data_stack, RO_name.replace(" ", "-"))
         # looping without triggering
-        frame = Frame(self.seq, bp24, True, False, False)
-        # make and add the RO
-        RO = RunningOrder(RO_name, frame)
-        self.rep.addRO(RO)
-        RO = RunningOrder(RO_name + " triggered",  [Frame(self.seq, bp24, False, True, False),
-            Frame(self.seq, bp24, True, True, False)])
-        self.rep.addRO(RO)
+        return RO_name, bp24
 
     def gen_palms_6(self, wl, na, angle_list):
         """Makes a RunningOrder to display all angles at once"""
@@ -820,14 +833,7 @@ class PALMRepertoire(ExptRepertoire):
             angle_bp_list.append(d > 0.5)
         # make a new 24-bit plane
         bp24 = BitPlane24(np.concatenate(angle_bp_list), RO_name.replace(" ", "-"))
-        # looping without triggering
-        frame = Frame(self.seq, bp24, True, False, False)
-        # make and add the RO
-        RO = RunningOrder(RO_name, frame)
-        self.rep.addRO(RO)
-        RO = RunningOrder(RO_name + " triggered", [Frame(self.seq, bp24, False, True, False),
-            Frame(self.seq, bp24, True, True, False)])
-        self.rep.addRO(RO)
+        return RO_name, bp24
 
 
 def _gen_name(angle, wl, na, n, onfrac):
