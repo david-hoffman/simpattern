@@ -93,9 +93,10 @@ def pattern(angle, period, phi=0, onfrac=0.5, shape=QXGA_shape):
     pattern : ndarray
         A binary array representing a single bitplane to send to the SLM
     """
-    if not 0 < onfrac < 1:
-        raise ValueError(('onfrac must have a value between'
-                          ' 0 and 1. onfrac = {}').format(onfrac))
+    if onfrac is not None:
+        if not 0 < onfrac < 1:
+            raise ValueError(('onfrac must have a value between'
+                              ' 0 and 1. onfrac = {}').format(onfrac))
     if not 2 <= period <= max(shape):
         raise ValueError(('period must be larger than 2 (nyquist limit)'
                           ' and smaller than the size of the array (DC limit)'
@@ -104,12 +105,15 @@ def pattern(angle, period, phi=0, onfrac=0.5, shape=QXGA_shape):
     yy, xx = np.indices(shape)
     # here's the pattern frequency
     freq = 2 * pi / period
-    # our sine goes from -1 to 1 while onfrac goes from 0,1 so move onfrac
-    # into the right range
-    onfrac = onfrac * 2 - 1
-    # do the evaluation
-    toreturn = ne.evaluate("sin(freq*(cos(angle)*xx + "
-                           "sin(angle)*yy)+phi) < onfrac")
+    toreturn = np.sin(freq * (np.cos(angle) * xx + np.sin(angle) * yy) + phi)
+    
+    if onfrac is not None:
+        # our sine goes from -1 to 1 while onfrac goes from 0,1 so move onfrac
+        # into the right range
+        onfrac = onfrac * 2 - 1
+        # do the evaluation
+        toreturn = toreturn < onfrac
+
     return toreturn
 
 
@@ -764,9 +768,11 @@ class PALMRepertoire(ExptRepertoire):
         phase_step = 2
         nphases = 8
         onfrac = 0.5
+        # we want an onfrac of 50%, so we'll just see which values are greater than 0
         # we want 8 phases
         phases = [(n / nphases / phase_step) * (2 * pi) for n in range(8)]
-        super().__init__(name, wls, nas, phases, 3, seq, onfrac)
+        # we want bitplanes to be raw data for averaging purpuoses
+        super().__init__(name, wls, nas, phases, 3, seq, onfrac=onfrac)
 
         # self.rep.addRO(self.blank_RO_triggered)
         # self.rep.addRO(self.blank_RO_triggered_final)
@@ -789,6 +795,20 @@ class PALMRepertoire(ExptRepertoire):
                     #     Frame(self.seq, bp24, True, True, True)])
                     # self.rep.addRO(RO_final)
 
+    def make_bitplanes(self):
+        """Function that returns a dictionary of dictionary of bitplanes
+        of BitPlanes
+
+        Need to overload this to not make bitplanes
+        """
+        # first level is wl
+        self.bitplanes = {wl: {
+            na: [
+                [pattern(ang, ideal_period(wl, na), phi, onfrac=None)
+                 for n, phi in enumerate(self.phases)] for ang in self.angles]
+            for na in self.nas
+        } for wl in self.wls}
+
     def gen_palms_2(self, wl, na, angle_list):
         """Makes a RunningOrder to display all angles at once"""
         # make an array of the first phase of the data
@@ -797,11 +817,11 @@ class PALMRepertoire(ExptRepertoire):
             "2 Beam PALM")
         print('Generating "' + RO_name + '"')
         # expand bitplanes into stack
-        data_stack = np.array([phase_bp.image
+        data_stack = np.array([phase_bp
             for angle in angle_list
             for phase_bp in angle])
         # make a 24-bit bitplane and single frame
-        bp24 = BitPlane24(data_stack, RO_name.replace(" ", "-"))
+        bp24 = BitPlane24(data_stack > 0.0, RO_name.replace(" ", "-"))
         # looping without triggering
         return RO_name, bp24
 
@@ -816,23 +836,18 @@ class PALMRepertoire(ExptRepertoire):
         print('Generating "' + RO_name + '"')
         # make an array of all the bitplanes (ordered as angle x phase)
         data_array = np.array([
-            [phase_bp.image for phase_bp in angle]
+            [phase_bp for phase_bp in angle]
             for angle in angle_list
         ])
-        # set up container
-        angle_bp_list = []
-        # loop through angle indexes
-        angle_idxs = list(range(data_array.shape[0]))
-        for i in angle_idxs:
-            # make a slice
-            s = angle_idxs[:i] + angle_idxs[i + 1:]
-            # average the first phase of two angles and all the phases
-            # of the other angles
-            d = (data_array[s, :1].sum(0) + data_array[i]) / len(angle_idxs)
-            # digitize bitplanes for one angle phase stepping
-            angle_bp_list.append(d > 0.5)
+        # we need to cover ALL the original bit planes, but averaged together in someway
+        # if we thing about the orientations being coordinates, then we basically need to
+        # do a coordinate transformation, the following rotation matrix does that
+        new_basis = np.ones((3, 3)) * 2 / 3
+        new_basis[np.diag_indices(3)] = -1/3
+        # rotate data array, and re-binarize
+        new_data = np.tensordot(new_basis, data_array, 1) > 0.0
         # make a new 24-bit plane
-        bp24 = BitPlane24(np.concatenate(angle_bp_list), RO_name.replace(" ", "-"))
+        bp24 = BitPlane24(new_data.reshape(-1, *new_data.shape[-2:]), RO_name.replace(" ", "-"))
         return RO_name, bp24
 
 
