@@ -341,9 +341,11 @@ class BitPlane(object):
 
     def __init__(self, image, name=None):
         """"""
+        if np.issubdtype(image.dtype, np.bool_):
+            image = image.astype('uint8')
         # validity checks
-        if not np.issubdtype(np.int64, image.dtype) or image.max() > 1 or image.min() < 0:
-            raise ValueError("Image data is not single bit {}".format(image))
+        if not np.issubdtype(image.dtype, np.integer) or image.max() > 1 or image.min() < 0:
+            raise ValueError("Image data is not single bit {}, dtype = {}, max = {}, min = {}".format(image, image.dtype, image.max(), image.min()))
         # make a copy so the external array can be used
         self.image = image.copy()
         # make it unchangeable

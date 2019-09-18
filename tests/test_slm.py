@@ -75,21 +75,21 @@ class TestBitPlane(unittest.TestCase):
         """
         The name is the hash when no name is passed
         """
-        bp = BitPlane(np.random.randint(1, size=(512, 512)))
+        bp = BitPlane(np.random.randint(2, size=(512, 512)))
         assert_equal(hex(hash(bp)), bp.name)
 
     def test_hash(self):
         """
         Make sure BitPlane's are hashable
         """
-        hash(BitPlane(np.random.randint(1, size=(512, 512))))
+        hash(BitPlane(np.random.randint(2, size=(512, 512))))
 
     def test_eq(self):
         """
         Make sure BitPlane's with the same data are equal
         """
         # make fake data
-        data = np.random.randint(1, size=(512, 512))
+        data = np.random.randint(2, size=(512, 512))
         # make two bitplanes containing same values but different underlying
         # objects
         bp1 = BitPlane(data)
