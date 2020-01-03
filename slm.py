@@ -13,6 +13,7 @@ import os
 import zipfile
 import hashlib
 import numpy as np
+
 # PIL allows us to write binary images, though we need a cludge
 # see 'Writing Binary Files.ipynb'
 from PIL import Image
@@ -25,14 +26,14 @@ def tuplify(arg):
     """
     # strings need special handling
     if isinstance(arg, str):
-        return (arg, )
+        return (arg,)
     # other wise try and make it a tuple
     try:
         # turn passed arg to list
         return tuple(arg)
     except TypeError:
         # if not iterable, then make list
-        return (arg, )
+        return (arg,)
 
 
 class Repertoire(object):
@@ -69,11 +70,9 @@ class Repertoire(object):
         else:
             self._ROs = list(tuplify(runnningorders))
             # build set of sequences in the repertoire
-            self.sequences = {seq for RO in self for frame in RO
-                              for seq in frame.sequences}
+            self.sequences = {seq for RO in self for frame in RO for seq in frame.sequences}
             # build set of bitplanes to store in repertoire
-            self.bitplanes = {bp for RO in self for frame in RO
-                              for bp in frame.bitplanes}
+            self.bitplanes = {bp for RO in self for frame in RO for bp in frame.bitplanes}
 
     @property
     def ROs(self):
@@ -84,10 +83,8 @@ class Repertoire(object):
         # add the RO to the internal list
         self._ROs.append(RO)
         # update the internal sets of sequences and bitplanes
-        self.sequences.update({seq for frame in RO
-                               for seq in frame.sequences})
-        self.bitplanes.update({bp for frame in RO
-                               for bp in frame.bitplanes})
+        self.sequences.update({seq for frame in RO for seq in frame.sequences})
+        self.bitplanes.update({bp for frame in RO for bp in frame.bitplanes})
 
     def __iter__(self):
         # we want to be able to easily iterate over the internal ROs
@@ -125,7 +122,7 @@ class Repertoire(object):
         # initialize dictionary for bitplanes
         self.bp_dict = {}
         # start a list for the final printout
-        bps = ['IMAGES']
+        bps = ["IMAGES"]
         # iterate through bitplanes, which will be sorted be name
         i = 0
         for bp in sorted(self.bitplanes):
@@ -135,7 +132,7 @@ class Repertoire(object):
             # adjust offset correctly
             i += bp.bitdepth
         # finish printout
-        bps.append('IMAGES_END\n\n')
+        bps.append("IMAGES_END\n\n")
         # save string internally for later use
         self.bp_str = "\n".join(bps)
         # return right away for ease of use
@@ -155,7 +152,7 @@ class Repertoire(object):
         # initialize dictionary for sequences
         self.seq_dict = {}
         # start a list for final printout
-        seqs = ['SEQUENCES']
+        seqs = ["SEQUENCES"]
         # iterate through sequences
         for i, seq in enumerate(sorted(self.sequences)):
             # find right character
@@ -165,7 +162,7 @@ class Repertoire(object):
             # update dict
             self.seq_dict[seq] = char
         # finish printout
-        seqs.append('SEQUENCES_END\n\n')
+        seqs.append("SEQUENCES_END\n\n")
         # save string for later and return right aways for convenience
         self.seq_str = "\n".join(seqs)
         return self.seq_str
@@ -175,10 +172,10 @@ class Repertoire(object):
         Function that writes RO using the internal dictionaries
         """
         # put out name
-        result = ['"' + RO.name + '"', '[HWA \n']
+        result = ['"' + RO.name + '"', "[HWA \n"]
         result.extend([self.write_frame(frame) for frame in RO])
-        result.append(']')
-        return '\n'.join(result)
+        result.append("]")
+        return "\n".join(result)
 
     def write_frame(self, frame):
         seq_dict = self.seq_dict
@@ -199,7 +196,7 @@ class Repertoire(object):
 
         if frame.triggered:
             start = start + ["t"]
-        
+
         return "".join(start + int_result + end)
 
     def write_repz11(self, path=""):
@@ -213,8 +210,9 @@ class Repertoire(object):
             path to place the repz11 file.
         """
 
-        with zipfile.ZipFile(path + self.name + ".repz11", "w",
-                             compression=zipfile.ZIP_DEFLATED) as zf:
+        with zipfile.ZipFile(
+            path + self.name + ".repz11", "w", compression=zipfile.ZIP_DEFLATED
+        ) as zf:
             # write sequences to zipfile
             for seq in self.sequences:
                 zf.write(seq.path, arcname=seq.name)
@@ -235,6 +233,7 @@ class RunningOrder(object):
     Controller to execute Compiled Sequences on selected bit-planes/n-bit
     images.
     """
+
     # NOTE: it might be worthwhile to just subclass a list for this
     # give a list a name attribute
 
@@ -270,6 +269,7 @@ class Frame(object):
     sequence. A Frame is described by the sequence and image designators in
     a parenthesised pair, for example
     """
+
     # for now there will be two types of Frames, looped and unlooped
 
     def __init__(self, sequences, bitplanes, looped, triggered, finish_signal):
@@ -277,14 +277,16 @@ class Frame(object):
         self.triggered = triggered
         self.finish_signal = finish_signal
 
-        assert not (self.finish_signal and not self.looped), "Cannot have a finish signal without a loop"
-        
+        assert not (
+            self.finish_signal and not self.looped
+        ), "Cannot have a finish signal without a loop"
+
         tsequences = tuplify(sequences)
         tbitplanes = tuplify(bitplanes)
-        
-        assert len(tsequences) == len(tbitplanes), ("Number of bitplanes does"
-                                                    " not equal number of"
-                                                    " sequences!")
+
+        assert len(tsequences) == len(tbitplanes), (
+            "Number of bitplanes does" " not equal number of" " sequences!"
+        )
         self.sequences = tsequences
         self.bitplanes = tbitplanes
 
@@ -299,7 +301,6 @@ class FrameGroup(object):
     def __init__(self, sequence, bitplane, triggered):
         self.sequence, self.bitplane, self.triggered = sequence, bitplane, triggered
         raise NotImplementedError
-
 
 
 class Sequence(object):
@@ -334,6 +335,7 @@ class Sequence(object):
 
 class BitPlane(object):
     """BitPlanes have data (the image) and names"""
+
     # This class should take care of all the lowlevel tasks we may later
     # want to implement, such as loading from disk writing to disk, excetera
 
@@ -342,10 +344,14 @@ class BitPlane(object):
     def __init__(self, image, name=None):
         """"""
         if np.issubdtype(image.dtype, np.bool_):
-            image = image.astype('uint8')
+            image = image.astype("uint8")
         # validity checks
         if not np.issubdtype(image.dtype, np.integer) or image.max() > 1 or image.min() < 0:
-            raise ValueError("Image data is not single bit {}, dtype = {}, max = {}, min = {}".format(image, image.dtype, image.max(), image.min()))
+            raise ValueError(
+                "Image data is not single bit {}, dtype = {}, max = {}, min = {}".format(
+                    image, image.dtype, image.max(), image.min()
+                )
+            )
         # make a copy so the external array can be used
         self.image = image.copy()
         # make it unchangeable
@@ -356,8 +362,7 @@ class BitPlane(object):
             self._name = name
 
     def __hash__(self):
-        return int.from_bytes(hashlib.md5(self.image.data).digest(),
-                              byteorder="big", signed=True)
+        return int.from_bytes(hashlib.md5(self.image.data).digest(), byteorder="big", signed=True)
 
     def __eq__(self, other):
         # we don't care about the specific names
@@ -372,12 +377,11 @@ class BitPlane(object):
     def __bytes__(self):
         """Convert Image to byte string"""
         # form the 8 bit grayscale image
-        bp_img = Image.fromarray(
-            (self.image * 255).astype('uint8'), mode='L')
+        bp_img = Image.fromarray((self.image * 255).astype("uint8"), mode="L")
         # create an output bytes buffer to save the image to
         output = BytesIO()
         # save the image to the buffer
-        bp_img.convert('1').save(output, "BMP")
+        bp_img.convert("1").save(output, "BMP")
         # return a bytes object
         return output.getvalue()
 
@@ -403,7 +407,7 @@ class BitPlane24(BitPlane):
     def __bytes__(self):
         """Convert Image to byte string"""
         # form the 8 bit grayscale image
-        bp_img = Image.fromarray(_24_bit_to_RGB(self.image), mode='RGB')
+        bp_img = Image.fromarray(_24_bit_to_RGB(self.image), mode="RGB")
         # create an output bytes buffer to save the image to
         output = BytesIO()
         # save the image to the buffer, but we want to save as 24-bit RGB

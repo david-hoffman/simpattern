@@ -25,7 +25,7 @@ def test_localize2():
     xr = -0.2
     yr = 0.6
     # make fake peak that is dot of two parabolas
-    pat = (-(x - yr)**2).reshape(-1, 1) * (-(x - xr)**2)
+    pat = (-(x - yr) ** 2).reshape(-1, 1) * (-(x - xr) ** 2)
     y0, x0 = localize_peak(pat)
     assert_almost_equal(yr, y0)
     assert_almost_equal(xr, x0)
@@ -60,6 +60,7 @@ def test_pattern_period_error():
     # test edge case
     pattern(0, 2)
 
+
 # def test_onfrac(self):
 #     """
 #     test whether the onfrac is the mean of the values
@@ -77,7 +78,7 @@ def test_pattern_angles():
     for angle in angles:
         pat = pattern(angle, 10)
         param = pattern_params(pat)
-        assert_almost_equal(angle, param['angle'], 2)
+        assert_almost_equal(angle, param["angle"], 2)
 
 
 def test_pattern_period():
@@ -89,8 +90,8 @@ def test_pattern_period():
     for period in periods:
         pat = pattern(np.pi / 4, period)
         param = pattern_params(pat)
-        assert np.isclose(period, param['period'], 1e-1), (
-            "{} != {}".format(period, param['period'])
+        assert np.isclose(period, param["period"], 1e-1), "{} != {}".format(
+            period, param["period"]
         )
 
 
@@ -103,9 +104,9 @@ class TestSIMRepertoire(unittest.TestCase):
         """
         Set up an internal rep.
         """
-        self.seq = Sequence(os.path.join(os.path.dirname(__file__),
-                                         "..", "HHMI_R11_Seq",
-                                         "48070 HHMI 10ms.seq11"))
+        self.seq = Sequence(
+            os.path.join(os.path.dirname(__file__), "..", "HHMI_R11_Seq", "48070 HHMI 10ms.seq11")
+        )
         self.simrep = SIMRepertoire("dummyrep", 488, 0.85, 2, 3, self.seq)
 
     def check_tuples(self):
@@ -122,10 +123,7 @@ class TestSIMRepertoire(unittest.TestCase):
         """
         simrep = self.simrep
         output = simrep.make_sim_frame_list(0)
-        output_true = [
-            (self.seq, 0, False, True, False),
-            (self.seq, 0, True, False, True)
-        ]
+        output_true = [(self.seq, 0, False, True, False), (self.seq, 0, True, False, True)]
         assert_equal(output, output_true)
 
     def test_make_sim_frame_list_multiple(self):
@@ -141,7 +139,7 @@ class TestSIMRepertoire(unittest.TestCase):
             (self.seq, 1, False, True, False),
             (self.seq, 1, True, False, True),
             (self.seq, 2, False, True, False),
-            (self.seq, 2, True, False, True)
+            (self.seq, 2, True, False, True),
         ]
         assert_equal(output, output_true)
 
@@ -162,6 +160,6 @@ class TestSIMRepertoire(unittest.TestCase):
             (self.seq, (0, 1), False, True, False),
             (self.seq, (0, 1), True, False, True),
             (self.seq, (1, 1), False, True, False),
-            (self.seq, (1, 1), True, False, True)
+            (self.seq, (1, 1), True, False, True),
         ]
         assert_equal(output, output_true)

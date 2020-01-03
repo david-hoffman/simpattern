@@ -14,17 +14,18 @@ import numpy as np
 from numpy.linalg import norm
 from scipy.optimize import minimize
 import numexpr as ne
+
 try:
-    from pyfftw.interfaces.numpy_fft import (fftshift, ifftshift,
-                                             rfftn, irfftn)
+    from pyfftw.interfaces.numpy_fft import fftshift, ifftshift, rfftn, irfftn
     import pyfftw
+
     # Turn on the cache for optimum performance
     pyfftw.interfaces.cache.enable()
 except ImportError:
     from numpy.fft import fftshift, ifftshift, rfftn, irfftn
 from dphutils import slice_maker
-from .slm import (Sequence, Repertoire, RunningOrder, Frame,
-                  BitPlane, BitPlane24, tuplify)
+from .slm import Sequence, Repertoire, RunningOrder, Frame, BitPlane, BitPlane24, tuplify
+
 # define pi for later use
 pi = np.pi
 
@@ -44,30 +45,12 @@ seq_2ms_LB = Sequence(seq_home + "48084 HHMI 2ms 1-bit Lit Balanced.seq11")
 
 
 mcf_dict = {
-    405: {
-        "frequency": 151.479,
-        "maxpower": 22.5
-    },
-    445: {
-        "frequency": 151.980,
-        "maxpower": 22.4
-    },
-    488: {
-        "frequency": 130.202,
-        "maxpower": 16.7
-    },
-    532: {
-        "frequency": 115.488,
-        "maxpower": 18.0
-    },
-    561: {
-        "frequency": 108.000,
-        "maxpower": 20.0
-    },
-    642: {
-        "frequency": 90.985,
-        "maxpower": 20.5
-    }
+    405: {"frequency": 151.479, "maxpower": 22.5},
+    445: {"frequency": 151.980, "maxpower": 22.4},
+    488: {"frequency": 130.202, "maxpower": 16.7},
+    532: {"frequency": 115.488, "maxpower": 18.0},
+    561: {"frequency": 108.000, "maxpower": 20.0},
+    642: {"frequency": 90.985, "maxpower": 20.5},
 }
 
 
@@ -95,18 +78,23 @@ def pattern(angle, period, phi=0, onfrac=0.5, shape=QXGA_shape):
     """
     if onfrac is not None:
         if not 0 < onfrac < 1:
-            raise ValueError(('onfrac must have a value between'
-                              ' 0 and 1. onfrac = {}').format(onfrac))
+            raise ValueError(
+                ("onfrac must have a value between" " 0 and 1. onfrac = {}").format(onfrac)
+            )
     if not 2 <= period <= max(shape):
-        raise ValueError(('period must be larger than 2 (nyquist limit)'
-                          ' and smaller than the size of the array (DC limit)'
-                          '. period = {}').format(period))
+        raise ValueError(
+            (
+                "period must be larger than 2 (nyquist limit)"
+                " and smaller than the size of the array (DC limit)"
+                ". period = {}"
+            ).format(period)
+        )
     # generate grids
     yy, xx = np.indices(shape)
     # here's the pattern frequency
     freq = 2 * pi / period
     toreturn = np.sin(freq * (np.cos(angle) * xx + np.sin(angle) * yy) + phi)
-    
+
     if onfrac is not None:
         # our sine goes from -1 to 1 while onfrac goes from 0,1 so move onfrac
         # into the right range
@@ -153,8 +141,7 @@ def pattern_params(my_pat, size=2):
     """Find stuff"""
     # REAL FFT!
     # note the limited shifting, we don't want to shift the last axis
-    my_pat_fft = fftshift(rfftn(ifftshift(my_pat)),
-                           axes=tuple(range(my_pat.ndim))[:-1])
+    my_pat_fft = fftshift(rfftn(ifftshift(my_pat)), axes=tuple(range(my_pat.ndim))[:-1])
     my_abs_pat_fft = abs(my_pat_fft)
     # find dc loc, center of FFT after shifting
     sizeky, sizekx = my_abs_pat_fft.shape
@@ -179,33 +166,39 @@ def pattern_params(my_pat, size=2):
     # calc modulation depth
     numerator = abs(my_pat_fft[slice_maker(max_loc, size)].sum())
     mod = numerator / dc_power
-    return {"period": precise_period,
-            "angle": preciseangle,
-            "phase": phase,
-            "fft": my_pat_fft,
-            "mod": mod,
-            "max_loc": max_loc}
+    return {
+        "period": precise_period,
+        "angle": preciseangle,
+        "phase": phase,
+        "fft": my_pat_fft,
+        "mod": mod,
+        "max_loc": max_loc,
+    }
 
 
 def opt_period(iperiod, angle, **kwargs):
     """Optimize actual period"""
+
     def objf_l1(period):
-        calc_period = pattern_params(angle, period, **kwargs)['period']
+        calc_period = pattern_params(angle, period, **kwargs)["period"]
         return abs(calc_period - iperiod)
-    return minimize(objf_l1, iperiod, method='Nelder-Mead')['x']
+
+    return minimize(objf_l1, iperiod, method="Nelder-Mead")["x"]
 
 
 def opt_angle(period, iangle, **kwargs):
     """Optimize angle"""
+
     def objf_l1(angle):
-        calc_angle = pattern_params(angle, period, **kwargs)['angle']
+        calc_angle = pattern_params(angle, period, **kwargs)["angle"]
         return abs(calc_angle - iangle)
-    return minimize(objf_l1, iangle, method='Nelder-Mead')['x']
+
+    return minimize(objf_l1, iangle, method="Nelder-Mead")["x"]
 
 
 def make_angles(init_angle, num_angles):
     """Make a list of angles"""
-    thetas = np.arange(0., num_angles) * pi / 1. / num_angles + init_angle
+    thetas = np.arange(0.0, num_angles) * pi / 1.0 / num_angles + init_angle
     return thetas
 
 
@@ -223,7 +216,7 @@ def ideal_period(wavelength, na=0.85):
     # focal length of objective
     fobj = 2
     # wavelength of light
-    wl = wavelength / 10**6
+    wl = wavelength / 10 ** 6
     mag = fobj / ftube
     # std dev of gaussian beam in units of pixels at the SLM
     # sigma = np.sqrt(2) * 12 / pixel_size / 4
@@ -247,10 +240,7 @@ class ExptRepertoire(object):
     blank_bitplane = BitPlane(np.zeros(QXGA_shape, dtype=bool), "Blank")
     blank_bitplane24 = BitPlane24(np.zeros((24,) + QXGA_shape, dtype=bool), "Blank24")
 
-    blank_RO = RunningOrder(
-            "Blank",
-            Frame(seq_24_50ms, blank_bitplane24, True, False, False)
-        )
+    blank_RO = RunningOrder("Blank", Frame(seq_24_50ms, blank_bitplane24, True, False, False))
 
     def __init__(self, name, wls, nas, phases, norientations, seq, onfrac=0.5):
         """
@@ -295,8 +285,9 @@ class ExptRepertoire(object):
         num_bitplanes += len(self.wls) + 1
         if num_bitplanes > 1024:
             raise RuntimeError(
-                ("These settings will generate {} "
-                 "bitplanes which is more than 1024").format(num_bitplanes)
+                ("These settings will generate {} " "bitplanes which is more than 1024").format(
+                    num_bitplanes
+                )
             )
         else:
             print("Generating {} bitplanes".format(num_bitplanes))
@@ -308,8 +299,7 @@ class ExptRepertoire(object):
         elif norientations == 7:
             init_angle = np.deg2rad(0.9)
         else:
-            raise RuntimeError("number of orientations not valid, ",
-                               norientations)
+            raise RuntimeError("number of orientations not valid, ", norientations)
         self.angles = make_angles(init_angle, norientations)
         # once we have all this info we can start making bitplanes
         self.make_bitplanes()
@@ -321,13 +311,22 @@ class ExptRepertoire(object):
         of BitPlanes
         """
         # first level is wl
-        self.bitplanes = {wl: {
-            na: [
-                [BitPlane(pattern(ang, ideal_period(wl, na), phi, onfrac=self.onfrac),
-                          _gen_name(ang, wl, na, n, self.onfrac))
-                 for n, phi in enumerate(self.phases)] for ang in self.angles]
-            for na in self.nas
-        } for wl in self.wls}
+        self.bitplanes = {
+            wl: {
+                na: [
+                    [
+                        BitPlane(
+                            pattern(ang, ideal_period(wl, na), phi, onfrac=self.onfrac),
+                            _gen_name(ang, wl, na, n, self.onfrac),
+                        )
+                        for n, phi in enumerate(self.phases)
+                    ]
+                    for ang in self.angles
+                ]
+                for na in self.nas
+            }
+            for wl in self.wls
+        }
 
     def make_ROs(self):
         raise NotImplementedError
@@ -353,77 +352,109 @@ class SIMRepertoire(ExptRepertoire):
     This is _not_ a subclass of slm.Repertoire, but does hold an instance
     """
 
-    linear_str = "\n".join([
-        '[Sequence setpoints:{ROname}]',
-        'Running Order = {RO_num:d}',
-        'N Phases = {nphases:d}',
-        'Detection Mode = "Camera 1"',
-        'Pixel size (um) = "0.13, 0.13"',
-        'Filter Wheel 1 = "Filter {filter:d}"',
-        'Filter Wheel 2 = "Filter 0"',
-        r'File Index = "0,-1\0D\0A"',
-        'Setpoints:Galvo = "{galvo:}"',
-        ('Setpoints:Step 1 = "Laser[{wl:d} nm]; LC [{lc:}];'
-         ' Delay [0]; Camera[0]; Imaging[TRUE];'
-         ' AOTF[ 100 {wl:d} nm(X);   0 532 nm(X);   0 560 nm(X);  0 405 nm(X)];'
-         ' BeamBlock[No change]"')
-    ])
+    linear_str = "\n".join(
+        [
+            "[Sequence setpoints:{ROname}]",
+            "Running Order = {RO_num:d}",
+            "N Phases = {nphases:d}",
+            'Detection Mode = "Camera 1"',
+            'Pixel size (um) = "0.13, 0.13"',
+            'Filter Wheel 1 = "Filter {filter:d}"',
+            'Filter Wheel 2 = "Filter 0"',
+            r'File Index = "0,-1\0D\0A"',
+            'Setpoints:Galvo = "{galvo:}"',
+            (
+                'Setpoints:Step 1 = "Laser[{wl:d} nm]; LC [{lc:}];'
+                " Delay [0]; Camera[0]; Imaging[TRUE];"
+                " AOTF[ 100 {wl:d} nm(X);   0 532 nm(X);   0 560 nm(X);  0 405 nm(X)];"
+                ' BeamBlock[No change]"'
+            ),
+        ]
+    )
 
-    nonlinear_str = "\n".join([
-        '[Sequence setpoints:{ROname}]',
-        'Running Order = {RO_num:d}',
-        'N Phases = {nphases:d}',
-        'Detection Mode = "Camera 1"',
-        'Pixel size (um) = "0.13, 0.13"',
-        'Filter Wheel 1 = "Filter {filter:d}"',
-        'Filter Wheel 2 = "Filter 0"',
-        r'File Index = "0,-1\0D\0A1,-1\0D\0A2,-1\0D\0A"',
-        'Setpoints:Galvo = "{galvo:}"',
-        ('Setpoints:Step 1 = "Laser[405 nm]; LC [{galvo:}];'
-         ' Delay [100]; Camera[0]; Imaging[FALSE];'
-         ' AOTF[   0 {wl:d} nm(X);   0 488 nm(X);   0 560 nm(X); 100 405 nm(X)];'
-         ' BeamBlock[Out]"'),
-        ('Setpoints:Step 2 = "Laser[{wl:d} nm]; LC [{lc:}];'
-         ' Delay [100]; Camera[0]; Imaging[FALSE];'
-         ' AOTF[ 100 {wl:d} nm(X);   0 532 nm(X);   0 560 nm(X);  0 405 nm(X)];'
-         ' BeamBlock[In]"'),
-        ('Setpoints:Step 3 = "Laser[{wl:d} nm]; LC [{lc:}];'
-         ' Delay [0]; Camera[0]; Imaging[TRUE];'
-         ' AOTF[ 100 {wl:d} nm(X);   0 532 nm(X);   0 560 nm(X);  0 405 nm(X)];'
-         ' BeamBlock[In]"')
-    ])
+    nonlinear_str = "\n".join(
+        [
+            "[Sequence setpoints:{ROname}]",
+            "Running Order = {RO_num:d}",
+            "N Phases = {nphases:d}",
+            'Detection Mode = "Camera 1"',
+            'Pixel size (um) = "0.13, 0.13"',
+            'Filter Wheel 1 = "Filter {filter:d}"',
+            'Filter Wheel 2 = "Filter 0"',
+            r'File Index = "0,-1\0D\0A1,-1\0D\0A2,-1\0D\0A"',
+            'Setpoints:Galvo = "{galvo:}"',
+            (
+                'Setpoints:Step 1 = "Laser[405 nm]; LC [{galvo:}];'
+                " Delay [100]; Camera[0]; Imaging[FALSE];"
+                " AOTF[   0 {wl:d} nm(X);   0 488 nm(X);   0 560 nm(X); 100 405 nm(X)];"
+                ' BeamBlock[Out]"'
+            ),
+            (
+                'Setpoints:Step 2 = "Laser[{wl:d} nm]; LC [{lc:}];'
+                " Delay [100]; Camera[0]; Imaging[FALSE];"
+                " AOTF[ 100 {wl:d} nm(X);   0 532 nm(X);   0 560 nm(X);  0 405 nm(X)];"
+                ' BeamBlock[In]"'
+            ),
+            (
+                'Setpoints:Step 3 = "Laser[{wl:d} nm]; LC [{lc:}];'
+                " Delay [0]; Camera[0]; Imaging[TRUE];"
+                " AOTF[ 100 {wl:d} nm(X);   0 532 nm(X);   0 560 nm(X);  0 405 nm(X)];"
+                ' BeamBlock[In]"'
+            ),
+        ]
+    )
 
-    react_all_str = "\n".join([
-        '[Sequence setpoints:{ROname}]',
-        'Running Order = {RO_num:d}',
-        'N Phases = {nphases:d}',
-        'Detection Mode = "Camera 1"',
-        'Pixel size (um) = "0.13, 0.13"',
-        'Filter Wheel 1 = "Filter {filter:d}"',
-        'Filter Wheel 2 = "Filter 0"',
-        r'File Index = "0,-1\0D\0A1,-1\0D\0A2,-1\0D\0A"',
-        'Setpoints:Galvo = "{galvo:}"',
-        ('Setpoints:Step 1 = "Laser[405 nm]; LC [{galvo:}];'
-         ' Delay [100]; Camera[0]; Imaging[FALSE];'
-         ' AOTF[   0 {wl:d} nm(X);   0 488 nm(X);   0 560 nm(X); 100 405 nm(X)];'
-         ' BeamBlock[No change]"'),
-        ('Setpoints:Step 2 = "Laser[{wl:d} nm]; LC [{lc:}];'
-         ' Delay [100]; Camera[0]; Imaging[True];'
-         ' AOTF[ 100 {wl:d} nm(X);   0 532 nm(X);   0 560 nm(X);  0 405 nm(X)];'
-         ' BeamBlock[No change]"')
-    ])
+    react_all_str = "\n".join(
+        [
+            "[Sequence setpoints:{ROname}]",
+            "Running Order = {RO_num:d}",
+            "N Phases = {nphases:d}",
+            'Detection Mode = "Camera 1"',
+            'Pixel size (um) = "0.13, 0.13"',
+            'Filter Wheel 1 = "Filter {filter:d}"',
+            'Filter Wheel 2 = "Filter 0"',
+            r'File Index = "0,-1\0D\0A1,-1\0D\0A2,-1\0D\0A"',
+            'Setpoints:Galvo = "{galvo:}"',
+            (
+                'Setpoints:Step 1 = "Laser[405 nm]; LC [{galvo:}];'
+                " Delay [100]; Camera[0]; Imaging[FALSE];"
+                " AOTF[   0 {wl:d} nm(X);   0 488 nm(X);   0 560 nm(X); 100 405 nm(X)];"
+                ' BeamBlock[No change]"'
+            ),
+            (
+                'Setpoints:Step 2 = "Laser[{wl:d} nm]; LC [{lc:}];'
+                " Delay [100]; Camera[0]; Imaging[True];"
+                " AOTF[ 100 {wl:d} nm(X);   0 532 nm(X);   0 560 nm(X);  0 405 nm(X)];"
+                ' BeamBlock[No change]"'
+            ),
+        ]
+    )
 
-    linear_w_react_str = "\n".join([
-            '[Multiscan:{ROname}]',
+    linear_w_react_str = "\n".join(
+        [
+            "[Multiscan:{ROname}]",
             'Scan Def = "{ROname_sub},405 nm WF\\0D\\0A"',
             'Running Order = "{RO_num:d}"',
             r'N Times = "0,0\0D\0A"',
             r'Nth Cycle = "1,1\0D\0A"',
-            'Interleave = TRUE'
-        ])
+            "Interleave = TRUE",
+        ]
+    )
 
-    def __init__(self, name, wls, nas, orders, norientations, seq, onfrac=0.5,
-                 super_repeats=1, SIM_2D=True, doNL=True, super_mult=0):
+    def __init__(
+        self,
+        name,
+        wls,
+        nas,
+        orders,
+        norientations,
+        seq,
+        onfrac=0.5,
+        super_repeats=1,
+        SIM_2D=True,
+        doNL=True,
+        super_mult=0,
+    ):
         """
         Parameters
         ----------
@@ -477,8 +508,7 @@ class SIMRepertoire(ExptRepertoire):
             self.nphases *= super_mult
         print("number of phases =", self.nphases)
         # calculate actual phases
-        phases = [(n / self.nphases / phase_step) * (2 * pi)
-                       for n in range(self.nphases)]
+        phases = [(n / self.nphases / phase_step) * (2 * pi) for n in range(self.nphases)]
         # if we're doing nonlinear, add flipped patterns
         if max(self.orders) > 1 and self.do_nl:
             print("generating non-linear phases")
@@ -488,7 +518,7 @@ class SIMRepertoire(ExptRepertoire):
         # add bitplane with timing
         self.blankwtiming = [
             Frame(self.seq, self.blank_bitplane, False, True, False),
-            Frame(self.seq, self.blank_bitplane, True, False, True)
+            Frame(self.seq, self.blank_bitplane, True, False, True),
         ]
 
         RO405 = RunningOrder("405 nm WF", self.blankwtiming)
@@ -509,48 +539,53 @@ class SIMRepertoire(ExptRepertoire):
     def gen_sims(self, wl, na, angle_list):
         """Do linear and nonlinear SIMs here"""
         # define the naming convention for ROs
-        name_str = ("{} nm ".format(wl) +
-                    "{} phases " +
-                    "{:.2f} NA ".format(na) +
-                    "{} SIM")
+        name_str = "{} nm ".format(wl) + "{} phases " + "{:.2f} NA ".format(na) + "{} SIM"
         # loop through the orders
         for order in self.orders:
             # calculate the number of phases
             # Calculate the offset of bitplanes
             for reps, num_phases, ext_str, orients in zip(
-                    (1, 1, 1, 1, self.repeats),
-                    # here we need to add the order
-                    (self.np_base + order * 2, self.np_base + order * 2, self.np_base + order * 2, self.np_base + order * 2, self.nphases),
-                    ("", "React ", "React_All ", "Single Orientation ", "Super "),
-                    (slice(None), slice(None), slice(None), slice(1), slice(None))):
+                (1, 1, 1, 1, self.repeats),
+                # here we need to add the order
+                (
+                    self.np_base + order * 2,
+                    self.np_base + order * 2,
+                    self.np_base + order * 2,
+                    self.np_base + order * 2,
+                    self.nphases,
+                ),
+                ("", "React ", "React_All ", "Single Orientation ", "Super "),
+                (slice(None), slice(None), slice(None), slice(1), slice(None)),
+            ):
                 delta = self.nphases // num_phases
                 if order == 1:
                     # linear sim case, super and regular
                     series_list = [
                         phase_bp
                         for phase_list in angle_list[orients]
-                        for phase_bp in phase_list[:self.nphases:delta] * reps
+                        for phase_bp in phase_list[: self.nphases : delta] * reps
                     ]
                     if ext_str == "React_All ":
                         series_list = [(self.blank_bitplane, phase_bp) for phase_bp in series_list]
                     else:
-                        series_list = [(phase_bp, ) for phase_bp in series_list]
+                        series_list = [(phase_bp,) for phase_bp in series_list]
                     RO_name = name_str.format(num_phases, ext_str + "Linear")
                 elif self.do_nl:
                     # non-linear SIM case
                     series_list = []
                     for phase_list in angle_list:
-                        off_phases = phase_list[self.nphases::delta] * reps
-                        on_phases = phase_list[:self.nphases:delta] * reps
+                        off_phases = phase_list[self.nphases :: delta] * reps
+                        on_phases = phase_list[: self.nphases : delta] * reps
                         assert len(off_phases) == len(on_phases)
                         reactivation = [self.blank_bitplane] * len(off_phases)
-                        series_list.extend([
-                            phase_bp
-                            for series in zip(reactivation, off_phases, on_phases)
-                            for phase_bp in series
-                        ])
-                    RO_name = name_str.format(num_phases, ext_str +
-                                              "Non-Linear")
+                        series_list.extend(
+                            [
+                                phase_bp
+                                for series in zip(reactivation, off_phases, on_phases)
+                                for phase_bp in series
+                            ]
+                        )
+                    RO_name = name_str.format(num_phases, ext_str + "Non-Linear")
                 else:
                     # order greater than 1 and no nonlinear requested
                     continue
@@ -559,7 +594,9 @@ class SIMRepertoire(ExptRepertoire):
                     Frame(self.seq, phase_bp, looped, triggered, finish)
                     for series in series_list
                     for phase_bp in series
-                    for looped, triggered, finish in zip((False, True), (True, False), (False, True))
+                    for looped, triggered, finish in zip(
+                        (False, True), (True, False), (False, True)
+                    )
                 ]
                 if ext_str == "React ":
                     frames += self.blankwtiming
@@ -580,18 +617,16 @@ class SIMRepertoire(ExptRepertoire):
         # make single orientations
         ###################################################################
         for angle, phase_list in zip(self.angles, angle_list):
-            RO_name = name_str.format(
-                1, "{:.1f} angle".format(np.rad2deg(angle)))
-            self.rep.addRO(RunningOrder(
-                RO_name, Frame(self.seq, phase_list[0], True, False, False)))
+            RO_name = name_str.format(1, "{:.1f} angle".format(np.rad2deg(angle)))
+            self.rep.addRO(
+                RunningOrder(RO_name, Frame(self.seq, phase_list[0], True, False, False))
+            )
             print('Generating "' + RO_name + '"')
 
     def gen_all_angles(self, wl, na, angle_list):
         """Makes a RunningOrder to display all angles at once"""
         # make an array of the first phase of the data
-        data_array = np.array([
-            ang[0].image for ang in angle_list
-        ])
+        data_array = np.array([ang[0].image for ang in angle_list])
         # take the mean and threshold at 0.5 (binarize)
         bitplane = data_array.mean(0) > 0.5
         # generate names
@@ -654,10 +689,7 @@ class SIMRepertoire(ExptRepertoire):
                         filter_num = 3
                     else:
                         lc_start = -self.ndirs
-                    lc = ",".join([
-                        str(i)
-                        for i in range(lc_start, lc_start + ndirs)
-                    ])
+                    lc = ",".join([str(i) for i in range(lc_start, lc_start + ndirs)])
                     str_dict = dict(
                         wl=RO.wl,
                         nphases=RO.nphases,
@@ -666,11 +698,9 @@ class SIMRepertoire(ExptRepertoire):
                         RO_num=i,
                         filter=filter_num,
                         lc=lc,
-                        galvo=",".join("0" * ndirs)
+                        galvo=",".join("0" * ndirs),
                     )
-                    file.write(str2write.format(
-                        **str_dict
-                    ))
+                    file.write(str2write.format(**str_dict))
                     file.write("\n\n")
                 except AttributeError:
                     pass
@@ -679,29 +709,37 @@ class SIMRepertoire(ExptRepertoire):
         """dfds"""
 
         print("Writing .mcf and .tsv")
-        mcf_entry = ("[Line{num:}]\n"
-                     "Frequency={frequency:3f}\n"
-                     "WaveLength={wl:}\n"
-                     "Power={maxpower:.1f}\n"
-                     "MaxPower={maxpower:.1f}\n"
-                     "Title={title:}\n")
+        mcf_entry = (
+            "[Line{num:}]\n"
+            "Frequency={frequency:3f}\n"
+            "WaveLength={wl:}\n"
+            "Power={maxpower:.1f}\n"
+            "MaxPower={maxpower:.1f}\n"
+            "Title={title:}\n"
+        )
 
         # iterate through ROs
         mcfname = os.path.join(path, self.rep.name + ".mcf")
         tsvname = os.path.join(path, self.rep.name + ".tsv")
         abspath = os.path.abspath("")
-        with open(mcfname, 'w') as mcf, open(tsvname, 'w') as tsv:
+        with open(mcfname, "w") as mcf, open(tsvname, "w") as tsv:
             for i, ro in enumerate(self.rep):
                 if "NA Linear SIM" in ro.name:
                     # reorder frames into orientations
-                    frame_names = np.array([frame.bitplanes[0].name for frame in ro])[::2].reshape(-1, 5)
+                    frame_names = np.array([frame.bitplanes[0].name for frame in ro])[::2].reshape(
+                        -1, 5
+                    )
                     for j, orient in enumerate(frame_names):
                         # there should be 3 of these
                         # write a line in the MCF file
-                        tsvline = "\t".join([os.path.join(abspath, self.rep.name, bp + ".bmp") for bp in orient])
+                        tsvline = "\t".join(
+                            [os.path.join(abspath, self.rep.name, bp + ".bmp") for bp in orient]
+                        )
                         tsv.write(tsvline + "\n")
                         title = ro.name + " {}".format(j)
-                        mcfline = mcf_entry.format(num="{}{}".format(i,j), wl=ro.wl, title=title, **mcf_dict[ro.wl])
+                        mcfline = mcf_entry.format(
+                            num="{}{}".format(i, j), wl=ro.wl, title=title, **mcf_dict[ro.wl]
+                        )
                         mcf.write(mcfline)
                 elif "All Angles" in ro.name:
                     # Here we make blank an dall
@@ -719,10 +757,12 @@ class SIMRepertoire(ExptRepertoire):
         such that there's one single triggered version followed
         by a looped version that has a triggered ending.
         """
-        return [(self.seq, phase_bp, looped, triggered, finish)
-                for phase_list in tuplify(series)
-                for phase_bp in tuplify(phase_list)
-                for looped, triggered, finish in zip((False, True), (True, False), (False, True))]
+        return [
+            (self.seq, phase_bp, looped, triggered, finish)
+            for phase_list in tuplify(series)
+            for phase_bp in tuplify(phase_list)
+            for looped, triggered, finish in zip((False, True), (True, False), (False, True))
+        ]
 
 
 class PALMRepertoire(ExptRepertoire):
@@ -732,19 +772,21 @@ class PALMRepertoire(ExptRepertoire):
     by spinning things around in the back pupil or spreading the
     energy out can we avoid this ..."""
 
-
     blank_RO_triggered = RunningOrder(
-            "Blank Triggered",
-            [Frame(seq_24_1ms, ExptRepertoire.blank_bitplane24, False, True, False),
-             Frame(seq_24_1ms, ExptRepertoire.blank_bitplane24, True, True, False)]
-        )
+        "Blank Triggered",
+        [
+            Frame(seq_24_1ms, ExptRepertoire.blank_bitplane24, False, True, False),
+            Frame(seq_24_1ms, ExptRepertoire.blank_bitplane24, True, True, False),
+        ],
+    )
 
     blank_RO_triggered_final = RunningOrder(
-            "Blank Triggered + Final",
-            [Frame(seq_24_1ms, ExptRepertoire.blank_bitplane24, False, True, False),
-             Frame(seq_24_1ms, ExptRepertoire.blank_bitplane24, True, True, True)]
-        )
-
+        "Blank Triggered + Final",
+        [
+            Frame(seq_24_1ms, ExptRepertoire.blank_bitplane24, False, True, False),
+            Frame(seq_24_1ms, ExptRepertoire.blank_bitplane24, True, True, True),
+        ],
+    )
 
     def __init__(self, name, wls, nas, seq):
         """
@@ -802,24 +844,27 @@ class PALMRepertoire(ExptRepertoire):
         Need to overload this to not make bitplanes
         """
         # first level is wl
-        self.bitplanes = {wl: {
-            na: [
-                [pattern(ang, ideal_period(wl, na), phi, onfrac=None)
-                 for n, phi in enumerate(self.phases)] for ang in self.angles]
-            for na in self.nas
-        } for wl in self.wls}
+        self.bitplanes = {
+            wl: {
+                na: [
+                    [
+                        pattern(ang, ideal_period(wl, na), phi, onfrac=None)
+                        for n, phi in enumerate(self.phases)
+                    ]
+                    for ang in self.angles
+                ]
+                for na in self.nas
+            }
+            for wl in self.wls
+        }
 
     def gen_palms_2(self, wl, na, angle_list):
         """Makes a RunningOrder to display all angles at once"""
         # make an array of the first phase of the data
-        RO_name = ("{} nm ".format(wl) +
-            "{:.2f} NA ".format(na) +
-            "2 Beam PALM")
+        RO_name = "{} nm ".format(wl) + "{:.2f} NA ".format(na) + "2 Beam PALM"
         print('Generating "' + RO_name + '"')
         # expand bitplanes into stack
-        data_stack = np.array([phase_bp
-            for angle in angle_list
-            for phase_bp in angle])
+        data_stack = np.array([phase_bp for angle in angle_list for phase_bp in angle])
         # make a 24-bit bitplane and single frame
         bp24 = BitPlane24(data_stack > 0.0, RO_name.replace(" ", "-"))
         # looping without triggering
@@ -828,22 +873,15 @@ class PALMRepertoire(ExptRepertoire):
     def gen_palms_6(self, wl, na, angle_list):
         """Makes a RunningOrder to display all angles at once"""
         # make an array of the first phase of the data
-        RO_name = (
-            "{} nm ".format(wl) +
-            "{:.2f} NA ".format(na) +
-            "6 Beam PALM"
-        )
+        RO_name = "{} nm ".format(wl) + "{:.2f} NA ".format(na) + "6 Beam PALM"
         print('Generating "' + RO_name + '"')
         # make an array of all the bitplanes (ordered as angle x phase)
-        data_array = np.array([
-            [phase_bp for phase_bp in angle]
-            for angle in angle_list
-        ])
+        data_array = np.array([[phase_bp for phase_bp in angle] for angle in angle_list])
         # we need to cover ALL the original bit planes, but averaged together in someway
         # if we thing about the orientations being coordinates, then we basically need to
         # do a coordinate transformation, the following rotation matrix does that
         new_basis = np.ones((3, 3)) * 2 / 3
-        new_basis[np.diag_indices(3)] = -1/3
+        new_basis[np.diag_indices(3)] = -1 / 3
         # rotate data array, and re-binarize
         new_data = np.tensordot(new_basis, data_array, 1) > 0.0
         # make a new 24-bit plane
@@ -855,5 +893,5 @@ def _gen_name(angle, wl, na, n, onfrac):
     """Generate a unique name for a BitPlane"""
     degree = np.rad2deg(angle)
     my_per = ideal_period(wl, na)
-    name = 'pat-{}nm-{:.2f}NA{:+.1f}deg-{:02d}ph-{:.4f}pix-{:.2f}DC'
+    name = "pat-{}nm-{:.2f}NA{:+.1f}deg-{:02d}ph-{:.4f}pix-{:.2f}DC"
     return name.format(wl, na, degree, n, my_per, onfrac)
