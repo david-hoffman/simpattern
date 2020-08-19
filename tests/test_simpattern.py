@@ -25,7 +25,7 @@ def test_localize2():
     xr = -0.2
     yr = 0.6
     # make fake peak that is dot of two parabolas
-    pat = (-(x - yr) ** 2).reshape(-1, 1) * (-(x - xr) ** 2)
+    pat = (-((x - yr) ** 2)).reshape(-1, 1) * (-((x - xr) ** 2))
     y0, x0 = localize_peak(pat)
     assert_almost_equal(yr, y0)
     assert_almost_equal(xr, x0)
